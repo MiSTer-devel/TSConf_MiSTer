@@ -68,7 +68,6 @@ port
 	SDRAM_DQ		: inout std_logic_vector(15 downto 0);
 	SDRAM_A		: out std_logic_vector(12 downto 0);
 	SDRAM_BA		: out std_logic_vector(1 downto 0);
-	SDRAM_CLK	: out std_logic;
 	SDRAM_DQML	: out std_logic;
 	SDRAM_DQMH	: out std_logic;
 	SDRAM_WE_N	: out std_logic;
@@ -344,9 +343,6 @@ signal key				: std_logic_vector(4 downto 0) := "00000";
 signal clk_hdmi		: std_logic;
 signal csync_ts		: std_logic;
 signal hdmi_d1_sig	: std_logic;
--- I2C
-signal i2c_do_bus		: std_logic_vector(7 downto 0);
-signal i2c_wr			: std_logic;
 
 signal mouse_do		: std_logic_vector(7 downto 0);
 -------------------------------------------------------------------------------
@@ -1269,8 +1265,6 @@ port map (
 	CLK		=> clk_84mhz,
 	clk_28MHz=> clk_28mhz,	
 	c0			=> c0,
-	c1 		=> c1,
-	c2 		=> c2,
 	c3			=> c3,
 	curr_cpu => curr_cpu,  -- from arbiter for luch DO_cpu
 	loader  	=> loader,    -- loader = 1: wr to ROM 
@@ -1281,22 +1275,16 @@ port map (
 	DO_cpu   => sdr2cpu_do_bus_16,
 	REQ      => dram_req,
 	RNW		=> dram_rnw,
-	RFSH		=> not cpu_rfsh_n,
-	RFSHREQ	=> open,
-	IDLE		=> open,
-	CK			=> SDRAM_CLK,
-	CKE		=> open,
+	CKE		=> SDRAM_CKE,
 	RAS_n		=> SDRAM_RAS_N,
 	CAS_n		=> SDRAM_CAS_N,
 	WE_n		=> SDRAM_WE_N,
-	BA1		=> SDRAM_BA(1),
-	BA0		=> SDRAM_BA(0),
+	CS_n		=> SDRAM_CS_N,
+	BA			=> SDRAM_BA,
 	MA			=> SDRAM_A,
 	DQ			=> SDRAM_DQ(15 downto 0),
 	DQML     => SDRAM_DQML,
-	DQMH     => SDRAM_DQMH,
-	dram_stb => open,
-	TST 		=> open);
+	DQMH     => SDRAM_DQMH);
 
 SE5: entity work.keyboard
 port map(
@@ -1367,22 +1355,6 @@ port map (
 	CN1_B		=> ssg_cn1_b,
 	CN1_C		=> ssg_cn1_c);
 
--- I2C Controller
---U12: entity work.i2c
---port map (
---	RESET		=> reset,
---	CLK		=> clk_28mhz,
---	ENA		=> ena_0_4375mhz,
---	A			=> cpu_a_bus(4),
---	DI			=> cpu_do_bus,
---	DO			=> i2c_do_bus,
---	WR			=> i2c_wr,
---	I2C_SCL	=> SCL,
---	I2C_SDA	=> SDA);
-
-SDRAM_CKE <= '1'; -- pullup
-SDRAM_CS_N <= '0'; -- pulldown
-
 -------------------------------------------------------------------------------
 -- Global
 -------------------------------------------------------------------------------
@@ -1414,7 +1386,7 @@ cpu_di_bus <=	rom_do_bus when (loader = '1' and cpu_mreq_n = '0' and cpu_rd_n = 
 		ssg_cn0_bus when (cpu_iorq_n = '0' and cpu_rd_n = '0' and cpu_a_bus = "1111111111111101" and ssg_sel = '0') else -- TurboSound
 		ssg_cn1_bus when (cpu_iorq_n = '0' and cpu_rd_n = '0' and cpu_a_bus = "1111111111111101" and ssg_sel = '1') else
 		key_scancode when (cpu_iorq_n = '0' and cpu_rd_n = '0' and cpu_a_bus = X"0001") else
-		i2c_do_bus when (cpu_iorq_n = '0' and cpu_rd_n = '0' and cpu_a_bus( 7 downto 5) = "100" and cpu_a_bus(3 downto 0) = "1100") else -- RTC
+		X"FF" when (cpu_iorq_n = '0' and cpu_rd_n = '0' and cpu_a_bus( 7 downto 5) = "100" and cpu_a_bus(3 downto 0) = "1100") else -- RTC
 		dout_ports when ena_ports = '1' else
 		"11111111";
 
@@ -1465,8 +1437,6 @@ port_bff7 <= '1' when (cpu_iorq_n = '0' and cpu_a_bus = X"BFF7" and cpu_m1_n = '
 --SD_CS_N <= sdcs_n_TS or loader;
 SD_CS_N <= sdcs_n_TS;
 
--- I2C
-i2c_wr <= '1' when (cpu_a_bus(7 downto 5) = "100" and cpu_a_bus(3 downto 0) = "1100" and cpu_wr_n = '0' and cpu_iorq_n = '0') else '0';	-- Port xx8C/xx9C[xxxxxxxx_100n1100]
 
 SOUND_L <= ("000" & port_xxfe_reg(4) & "0000000") + ("000" & ssg_cn0_a) + ("000" & ssg_cn0_b) + ("000" & ssg_cn1_a) + ("000" & ssg_cn1_b) + ("000" & covox_a) + ("000" & covox_b);
 SOUND_R <= ("000" & port_xxfe_reg(4) & "0000000") + ("000" & ssg_cn0_c) + ("000" & ssg_cn0_b) + ("000" & ssg_cn1_c) + ("000" & ssg_cn1_b) + ("000" & covox_c) + ("000" & covox_d);

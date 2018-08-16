@@ -14,7 +14,7 @@
 
 -- Quartus II generated Memory Initialization File (.mif)
 
-WIDTH=16;
+WIDTH=15;
 DEPTH=256;
 
 ADDRESS_RADIX=HEX;
