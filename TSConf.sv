@@ -164,16 +164,6 @@ pll pll
 	.locked(locked)
 );
 
-wire reset = RESET | status[0] | ~initReset_n | buttons[1];
-
-reg initReset_n = 0;
-always @(posedge clk_sys) begin
-	integer timeout = 0;
-	
-	if(timeout < 5000000) timeout <= timeout + 1;
-	else initReset_n <= 1;
-end
-
 //////////////////   HPS I/O   ///////////////////
 wire  [5:0] joy_0;
 wire  [5:0] joy_1;
@@ -237,13 +227,14 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 	.ioctl_wait(0)
 );
 
-
 wire [7:0] R,G,B;
 wire HBlank,VBlank;
 wire VSync, HSync;
 wire ce_vid;
 
 wire [10:0] laudio, raudio;
+
+wire reset;
 
 tsconf tsconf
 (
@@ -278,8 +269,9 @@ tsconf tsconf
 	.SOUND_L(laudio),
 	.SOUND_R(raudio),
 	
-	.ARESET(reset),
-	.RESET_OUT(),
+	.COLD_RESET(RESET | status[0]),
+	.WARM_RESET(buttons[1]),
+	.RESET_OUT(reset),
 	.RTC(RTC),
 
 	.CMOSCfg(CMOSCfg),

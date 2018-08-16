@@ -96,7 +96,8 @@ port
 	SOUND_L		: out std_logic_vector(10 downto 0);
 	SOUND_R		: out std_logic_vector(10 downto 0);
 
-	ARESET 		: in  std_logic;
+	COLD_RESET	: in  std_logic;
+	WARM_RESET	: in  std_logic;
 	RESET_OUT	: out std_logic;
 	RTC         : in  std_logic_vector(64 downto 0);
 
@@ -336,9 +337,6 @@ signal dma_spi_din 	: std_logic_vector(7 downto 0);
 signal cpu_spi_req	: std_logic;
 signal cpu_spi_din	: std_logic_vector(7 downto 0);
 signal spi_dout		: std_logic_vector(7 downto 0);
--- Keys
-signal key_f			: std_logic_vector(4 downto 0);
-signal key				: std_logic_vector(4 downto 0) := "00000";
 -- HDMI
 signal clk_hdmi		: std_logic;
 signal csync_ts		: std_logic;
@@ -1289,7 +1287,7 @@ port map (
 SE5: entity work.keyboard
 port map(
 	CLK		=> clk_28mhz,
-	RESET		=> areset,
+	RESET		=> COLD_RESET or WARM_RESET,
 	A			=> cpu_a_bus(15 downto 8),
 	KEYB		=> kb_do_bus,
 	KEYF		=> kb_f_bus,
@@ -1358,7 +1356,9 @@ port map (
 -------------------------------------------------------------------------------
 -- Global
 -------------------------------------------------------------------------------
-reset <= areset or kb_f_bus(1);	-- Reset
+reset <= COLD_RESET or WARM_RESET or kb_f_bus(1);	-- Reset
+RESET_OUT<=reset;
+
 go_arbiter <= go;
 
 process (clk_28mhz)
@@ -1371,33 +1371,29 @@ begin
 end process;
 
 -- CPU interface
---cpu_addr_ext <= "100" when (loader = '1' and cpu_a_bus(15 downto 14) = "11") else csvrom & "00"; --- ROM csrom (only for BANK0)
---cpu_addr_ext <= "100" when loader = '1' else csvrom & "00"; --- ROM csrom (only for BANK0) ; хак для загрузки с fat32 
 cpu_addr_ext <= "100" when (loader = '1' and (cpu_a_bus(15 downto 14) = "10" or cpu_a_bus(15 downto 14) = "11")) else csvrom & "00"; -- (c) VBI
 
 dram_rdata <= sdr_do_bus_16;
 
-cpu_di_bus <=	rom_do_bus when (loader = '1' and cpu_mreq_n = '0' and cpu_rd_n = '0' and cpu_a_bus(15 downto 13) = "000") else
+cpu_di_bus <=
+		rom_do_bus when (loader = '1' and cpu_mreq_n = '0' and cpu_rd_n = '0' and cpu_a_bus(15 downto 13) = "000") else -- loader ROM
 		sdr_do_bus when (cpu_mreq_n = '0' and cpu_rd_n = '0') else 	-- SDRAM
 		im2vect	when intack = '1' else
-		X"FF" when (cpu_iorq_n = '0' and cpu_rd_n = '0' and cpu_a_bus( 7 downto 0) = X"02") else
-		X"FF" when (cpu_iorq_n = '0' and cpu_rd_n = '0' and cpu_a_bus( 7 downto 0) = X"03") else
 		mc146818a_do_bus when (cpu_iorq_n = '0' and cpu_rd_n = '0' and port_bff7 = '1' and port_eff7_reg(7) = '1') else -- MC146818A
 		ssg_cn0_bus when (cpu_iorq_n = '0' and cpu_rd_n = '0' and cpu_a_bus = "1111111111111101" and ssg_sel = '0') else -- TurboSound
 		ssg_cn1_bus when (cpu_iorq_n = '0' and cpu_rd_n = '0' and cpu_a_bus = "1111111111111101" and ssg_sel = '1') else
 		key_scancode when (cpu_iorq_n = '0' and cpu_rd_n = '0' and cpu_a_bus = X"0001") else
-		X"FF" when (cpu_iorq_n = '0' and cpu_rd_n = '0' and cpu_a_bus( 7 downto 5) = "100" and cpu_a_bus(3 downto 0) = "1100") else -- RTC
 		dout_ports when ena_ports = '1' else
 		"11111111";
 
 zports_loader <= '1' when loader = '1' and port_xx01_reg(0) = '0' else '0'; -- enable zports_loader only for SPI flash loading mode
 
-process (areset, clk_28mhz, cpu_a_bus, cpu_mreq_n, cpu_wr_n, cpu_do_bus, port_xx01_reg)
+process (COLD_RESET, clk_28mhz)
 begin
-	if areset = '1' then
+	if COLD_RESET = '1' then
 		port_xx01_reg <= "00000001";	-- bit2 = (0:Loader ON, 1:Loader OFF); bit0 = (0:FLASH, 1:SD)
 		loader <= '1';
-	elsif clk_28mhz'event and clk_28mhz = '1' then
+	elsif rising_edge(clk_28mhz) then
 		if cpu_iorq_n = '0' and cpu_wr_n = '0' and cpu_a_bus(7 downto 0) = "00000001" then port_xx01_reg <= cpu_do_bus; end if;
 		if cpu_m1_n = '0' and cpu_mreq_n = '0' and cpu_a_bus = X"0000" and port_xx01_reg(2) = '1' then loader <= '0'; end if;
 	end if;
@@ -1417,29 +1413,14 @@ end process;
 -- TURBO
 turbo <= "11" when loader = '1' else sysconf(1 downto 0); 
 
--- Fx Keys
-process (clk_28mhz, key, kb_f_bus, key_f)
-begin
-	if (clk_28mhz'event and clk_28mhz = '1') then
-		key <= kb_f_bus;
-		if (kb_f_bus /= key) then
-			key_f <= key_f xor key;
-		end if;
-	end if;
-end process;
-
 -- RTC
 mc146818a_wr <= '1' when (port_bff7 = '1' and cpu_wr_n = '0') else '0';
---mc146818a_rd <= '1' when (port_bff7 = '1' and cpu_rd_n = '0') else '0';
 port_bff7 <= '1' when (cpu_iorq_n = '0' and cpu_a_bus = X"BFF7" and cpu_m1_n = '1' and port_eff7_reg(7) = '1') else '0';
 
 -- Z-Controller
---SD_CS_N <= sdcs_n_TS or loader;
 SD_CS_N <= sdcs_n_TS;
-
 
 SOUND_L <= ("000" & port_xxfe_reg(4) & "0000000") + ("000" & ssg_cn0_a) + ("000" & ssg_cn0_b) + ("000" & ssg_cn1_a) + ("000" & ssg_cn1_b) + ("000" & covox_a) + ("000" & covox_b);
 SOUND_R <= ("000" & port_xxfe_reg(4) & "0000000") + ("000" & ssg_cn0_c) + ("000" & ssg_cn0_b) + ("000" & ssg_cn1_c) + ("000" & ssg_cn1_b) + ("000" & covox_c) + ("000" & covox_d);
-RESET_OUT<=reset;
 
 end rtl;
