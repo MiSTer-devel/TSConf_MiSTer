@@ -8,6 +8,9 @@ This is the port of TSConf (one of ZX Spectrum clone with extra functionalities)
 * Supports both secondary SD and image on primary SD.
 * Kempston Joystick.
 * Kempston Mouse.
+* Turbosound (dual AY)
+* General Sound (384KB)
+* SAA1099
 
 ## Installation
 place RBF into root of primary SD card. And then you have 2 options:

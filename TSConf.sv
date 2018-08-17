@@ -127,7 +127,7 @@ localparam CONF_STR = {
 	"-;",
 	"R0,Reset and apply settings;",
 	"J,Fire 1,Fire 2;",
-	"V,v1.00.",`BUILD_DATE
+	"V,v1.10.",`BUILD_DATE
 };
 
 wire [27:0] CMOSCfg;
