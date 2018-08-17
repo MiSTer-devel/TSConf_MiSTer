@@ -353,6 +353,12 @@ signal gs_c				: std_logic_vector(13 downto 0);
 signal gs_d				: std_logic_vector(13 downto 0);
 signal gs_do_bus		: std_logic_vector(7 downto 0);
 
+-- SAA1099
+signal saa_wr_n		: std_logic;
+signal saa_out_l		: std_logic_vector(7 downto 0);
+signal saa_out_r		: std_logic_vector(7 downto 0);
+signal ce_saa			: std_logic;
+
 -------------------------------------------------------------------------------
 -- COMPONENTS TS Lab
 -------------------------------------------------------------------------------
@@ -368,7 +374,8 @@ port (
 	c1       	: out std_logic; 
 	c2       	: out std_logic; 
 	c3       	: out std_logic;
-	ay_clk   	: out std_logic);
+	ay_clk   	: out std_logic;
+	ce_saa   	: out std_logic);
 end component;
 
 component zclock is
@@ -801,6 +808,19 @@ port (
 	dout      : out std_logic_vector(7 downto 0));
 end component;
 
+component saa1099
+port (
+	clk_sys	: in  std_logic;
+	ce			: in  std_logic;
+	rst_n		: in  std_logic;
+	cs_n		: in  std_logic;
+	a0			: in  std_logic;
+	wr_n		: in  std_logic;
+	din		: in  std_logic_vector(7 downto 0);
+	out_l		: out std_logic_vector(7 downto 0);
+	out_r		: out std_logic_vector(7 downto 0));
+end component;
+
 -------------------------------------------------------------------------------
 
 begin
@@ -817,7 +837,7 @@ port map (
 	c1				=> c1,
 	c2				=> c2,
 	c3				=> c3,
-	ay_clk		=> open);	
+	ce_saa 		=> ce_saa);	
 
 TS02: zclock
 port map (
@@ -1388,6 +1408,18 @@ port map (
 	OUTC		=> gs_c,
 	OUTD		=> gs_d);
 
+U16: saa1099
+port map(
+	clk_sys	=> clk_28mhz,
+	ce			=> ce_saa,
+	rst_n		=> not reset,
+	cs_n		=> '0',
+	a0			=> cpu_a_bus(8),	-- 0=data, 1=address
+	wr_n		=> saa_wr_n,
+	din		=> cpu_do_bus,
+	out_l		=> saa_out_l,
+	out_r		=> saa_out_r);
+
 -------------------------------------------------------------------------------
 -- Global
 -------------------------------------------------------------------------------
@@ -1456,7 +1488,10 @@ port_bff7 <= '1' when (cpu_iorq_n = '0' and cpu_a_bus = X"BFF7" and cpu_m1_n = '
 -- Z-Controller
 SD_CS_N <= sdcs_n_TS;
 
-SOUND_L <= ("0000" & port_xxfe_reg(4) & "0000000000") + ("0000" & ssg_cn0_a & "000") + ("0000" & ssg_cn0_b & "000") + ("0000" & ssg_cn1_a & "000") + ("0000" & ssg_cn1_b & "000") + ("0000" & covox_a & "000") + ("0000" & covox_b & "000") + ("00" & gs_a) + ("00" & gs_b); -- + ("0000" & saa_out_l & "000");
-SOUND_R <= ("0000" & port_xxfe_reg(4) & "0000000000") + ("0000" & ssg_cn0_c & "000") + ("0000" & ssg_cn0_b & "000") + ("0000" & ssg_cn1_c & "000") + ("0000" & ssg_cn1_b & "000") + ("0000" & covox_c & "000") + ("0000" & covox_d & "000") + ("00" & gs_c) + ("00" & gs_d); -- + ("0000" & saa_out_r & "000");
+-- SAA1099
+saa_wr_n <= '0' when (cpu_iorq_n = '0' and cpu_wr_n = '0' and cpu_a_bus(7 downto 0) = "11111111" and dos = '0') else '1';
+
+SOUND_L <= ("0000" & port_xxfe_reg(4) & "0000000000") + ("0000" & ssg_cn0_a & "000") + ("0000" & ssg_cn0_b & "000") + ("0000" & ssg_cn1_a & "000") + ("0000" & ssg_cn1_b & "000") + ("0000" & covox_a & "000") + ("0000" & covox_b & "000") + ("00" & gs_a) + ("00" & gs_b) + ("0000" & saa_out_l & "000");
+SOUND_R <= ("0000" & port_xxfe_reg(4) & "0000000000") + ("0000" & ssg_cn0_c & "000") + ("0000" & ssg_cn0_b & "000") + ("0000" & ssg_cn1_c & "000") + ("0000" & ssg_cn1_b & "000") + ("0000" & covox_c & "000") + ("0000" & covox_d & "000") + ("00" & gs_c) + ("00" & gs_d) + ("0000" & saa_out_r & "000");
 
 end rtl;

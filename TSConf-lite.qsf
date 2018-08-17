@@ -375,6 +375,7 @@ set_global_assignment -name VHDL_FILE src/sound/soundrive.vhd
 set_global_assignment -name VHDL_FILE src/sound/turbosound.vhd
 set_global_assignment -name VHDL_FILE src/sound/ay8910.vhd
 set_global_assignment -name VHDL_FILE src/sound/gs.vhd
+set_global_assignment -name SYSTEMVERILOG_FILE src/sound/saa1099.sv
 set_global_assignment -name VERILOG_FILE src/memory/dma.v
 set_global_assignment -name VERILOG_FILE src/memory/arbiter.v
 set_global_assignment -name VERILOG_FILE src/video/video_ts_render.v

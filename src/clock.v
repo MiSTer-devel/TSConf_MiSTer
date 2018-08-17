@@ -20,7 +20,8 @@ module clock (
 	output reg	f0, f1,
 	output reg	h0, h1,
 	output reg	c0, c1, c2, c3,
-	output wire ay_clk
+	output wire ay_clk,
+	output reg  ce_saa
 );
 
 
@@ -45,6 +46,15 @@ module clock (
 	begin
 		skip_cnt <= skip_cnt[7] ? 8'd73 : skip_cnt - 8'd1;
 		ay_cnt <= ay_cnt + (skip_cnt[7] & ay_mod[0] ? 4'd2 : 4'd1);
+	end
+	
+	always @(posedge clk) begin
+		reg [2:0] div;
+	
+		div <= div + 1'd1;
+		if(div == 6) div <= 0;
+		
+		ce_saa <= (div == 0 || div == 3);
 	end
 	
 	
