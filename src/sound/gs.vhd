@@ -82,10 +82,8 @@ Port (
 	RD_n		: in  std_logic;
 	IORQ_n	: in  std_logic;
 	M1_n		: in  std_logic;
-	OUTA		: out std_logic_vector(13 downto 0);
-	OUTB		: out std_logic_vector(13 downto 0);
-	OUTC		: out std_logic_vector(13 downto 0);
-	OUTD		: out std_logic_vector(13 downto 0)
+	OUTL		: out std_logic_vector(14 downto 0);
+	OUTR		: out std_logic_vector(14 downto 0)
 );
 end gs;
 
@@ -160,102 +158,91 @@ port map (
 	RestorePC_n => '1');
 
 	
-process (CLKGS, cnt)
+-- INT#
+process (CLKGS)
 begin
-	if CLKGS'event and CLKGS = '1' then
+	if rising_edge(CLKGS) then
 		cnt <= cnt + 1;
 		if cnt = "1000110000" then	-- 21MHz / 560 = 0.0375MHz = 37.5kHz
 			cnt <= (others => '0');
-		end if;
-	end if;
-end process;
-
--- INT#
-process (CLKGS, cpu_iorq_n, cpu_m1_n, cnt)
-begin
-	if cpu_iorq_n = '0' and cpu_m1_n = '0' then
-		int_n <= '1';
-	elsif CLKGS'event and CLKGS = '1' then
-		if cnt = "1000110000" then
 			int_n <= '0';
 		end if;
+		if cpu_iorq_n = '0' and cpu_m1_n = '0' then
+			int_n <= '1';
+		end if;
 	end if;
 end process;
 
-process (CLKGS, cpu_iorq_n, cpu_m1_n, cpu_a_bus, IORQ_n, RD_n, A, WR_n)
+process (CLKGS)
 begin
-	if (cpu_iorq_n = '0' and cpu_m1_n = '1' and cpu_a_bus(3 downto 0) = X"2") or (IORQ_n = '0' and RD_n = '0' and A(7 downto 0) = X"B3") then
-		bit7_flag <= '0';
-	elsif (cpu_iorq_n = '0' and cpu_m1_n = '1' and cpu_a_bus(3 downto 0) = X"3") or (IORQ_n = '0' and WR_n = '0' and A(7 downto 0) = X"B3") then
-		bit7_flag <= '1';
-	elsif CLKGS'event and CLKGS = '1' then
-		if (cpu_iorq_n = '0' and cpu_m1_n = '1' and cpu_a_bus(3 downto 0) = X"A") then
+	if rising_edge(CLKGS) then
+		if (cpu_iorq_n = '0' and cpu_m1_n = '1' and cpu_a_bus(3 downto 0) = X"2") or (IORQ_n = '0' and RD_n = '0' and A(7 downto 0) = X"B3") then
+			bit7_flag <= '0';
+		elsif (cpu_iorq_n = '0' and cpu_m1_n = '1' and cpu_a_bus(3 downto 0) = X"3") or (IORQ_n = '0' and WR_n = '0' and A(7 downto 0) = X"B3") then
+			bit7_flag <= '1';
+		elsif (cpu_iorq_n = '0' and cpu_m1_n = '1' and cpu_a_bus(3 downto 0) = X"A") then
 			bit7_flag <= not port_xx00_reg(0);
 		end if;
 	end if;
 end process;
 
-process (CLKGS, cpu_iorq_n, cpu_m1_n, cpu_a_bus, IORQ_n, RD_n, A, WR_n)
+process (CLKGS)
 begin
-	if cpu_iorq_n = '0' and cpu_m1_n = '1' and cpu_a_bus(3 downto 0) = X"5" then
-		bit0_flag <= '0';
-	elsif IORQ_n = '0' and WR_n = '0' and A(7 downto 0) = X"BB" then
-		bit0_flag <= '1';
-	elsif CLKGS'event and CLKGS = '1' then
-		if (cpu_iorq_n = '0' and cpu_m1_n = '1' and cpu_a_bus(3 downto 0) = X"B") then
-			bit0_flag <= port_xx06_reg(5);
+	if rising_edge(CLKGS) then
+		if cpu_iorq_n = '0' and cpu_m1_n = '1' and cpu_a_bus(3 downto 0) = X"5" then
+			bit0_flag <= '0';
+		elsif IORQ_n = '0' and WR_n = '0' and A(7 downto 0) = X"BB" then
+			bit0_flag <= '1';
+		elsif cpu_iorq_n = '0' and cpu_m1_n = '1' and cpu_a_bus(3 downto 0) = X"B" then
+			bit0_flag <= port_xx09_reg(5);
 		end if;
 	end if;
 end process;
 
-process (CLK, A, IORQ_n, WR_n, RESET)
+process (CLK)
 begin
 	-- запись со стороны спектрума
- 	if RESET = '1' then
-		port_xxbb_reg <= (others => '0');
-		port_xxb3_reg <= (others => '0');
-	elsif CLK'event and CLK = '1' then
-		if IORQ_n = '0' and WR_n = '0' and A(7 downto 0) = X"BB" then port_xxbb_reg <= DI; end if;
-		if IORQ_n = '0' and WR_n = '0' and A(7 downto 0) = X"B3" then port_xxb3_reg <= DI; end if;
+	if rising_edge(CLK) then
+		if RESET = '1' then
+			port_xxbb_reg <= (others => '0');
+			port_xxb3_reg <= (others => '0');
+		else
+			if IORQ_n = '0' and WR_n = '0' and A(7 downto 0) = X"BB" then port_xxbb_reg <= DI; end if;
+			if IORQ_n = '0' and WR_n = '0' and A(7 downto 0) = X"B3" then port_xxb3_reg <= DI; end if;
+		end if;
 	end if;
 end process;
 
-process (A, bit7_flag, bit0_flag, port_xx03_reg)
-begin	
-	-- чтение со стороны спектрума
-	if A(3) = '1' then	-- port #xxBB
-		DO <= bit7_flag & "111111" & bit0_flag;
-	else				-- port #xxB3
-		DO <= port_xx03_reg;
-	end if;
-end process;
+-- port #xxBB / #xxB3
+DO <= bit7_flag & "111111" & bit0_flag when A(3) = '1' else port_xx03_reg;
 
-process (CLKGS, RESET, cpu_a_bus, cpu_m1_n, port_xx00_reg)
+process (CLKGS)
 begin
-	if RESET = '1' then
-		port_xx00_reg <= (others => '0');
-		port_xx03_reg <= (others => '0');
-		port_xx06_reg <= (others => '0');
-		port_xx07_reg <= (others => '0');
-		port_xx08_reg <= (others => '0');
-		port_xx09_reg <= (others => '0');
-		ch_a_reg <= (others => '0');
-		ch_b_reg <= (others => '0');
-		ch_c_reg <= (others => '0');
-		ch_d_reg <= (others => '0');
-		
-	elsif CLKGS'event and CLKGS = '1' then
-		if cpu_iorq_n = '0' and cpu_wr_n = '0' and cpu_a_bus(3 downto 0) = X"0" then port_xx00_reg <= cpu_do_bus; end if;
-		if cpu_iorq_n = '0' and cpu_wr_n = '0' and cpu_a_bus(3 downto 0) = X"3" then port_xx03_reg <= cpu_do_bus; end if;
-		if cpu_iorq_n = '0' and cpu_wr_n = '0' and cpu_a_bus(3 downto 0) = X"6" then port_xx06_reg <= cpu_do_bus(5 downto 0); end if;
-		if cpu_iorq_n = '0' and cpu_wr_n = '0' and cpu_a_bus(3 downto 0) = X"7" then port_xx07_reg <= cpu_do_bus(5 downto 0); end if;
-		if cpu_iorq_n = '0' and cpu_wr_n = '0' and cpu_a_bus(3 downto 0) = X"8" then port_xx08_reg <= cpu_do_bus(5 downto 0); end if;
-		if cpu_iorq_n = '0' and cpu_wr_n = '0' and cpu_a_bus(3 downto 0) = X"9" then port_xx09_reg <= cpu_do_bus(5 downto 0); end if;
-		
-		if cpu_mreq_n = '0' and cpu_rd_n = '0' and cpu_a_bus(15 downto 13) = "011" and cpu_a_bus(9 downto 8) = "00" then ch_a_reg <= ram1_do; end if;
-		if cpu_mreq_n = '0' and cpu_rd_n = '0' and cpu_a_bus(15 downto 13) = "011" and cpu_a_bus(9 downto 8) = "01" then ch_b_reg <= ram1_do; end if;
-		if cpu_mreq_n = '0' and cpu_rd_n = '0' and cpu_a_bus(15 downto 13) = "011" and cpu_a_bus(9 downto 8) = "10" then ch_c_reg <= ram1_do; end if;
-		if cpu_mreq_n = '0' and cpu_rd_n = '0' and cpu_a_bus(15 downto 13) = "011" and cpu_a_bus(9 downto 8) = "11" then ch_d_reg <= ram1_do; end if;
+	if rising_edge(CLKGS) then
+		if RESET = '1' then
+			port_xx00_reg <= (others => '0');
+			port_xx03_reg <= (others => '0');
+			port_xx06_reg <= (others => '0');
+			port_xx07_reg <= (others => '0');
+			port_xx08_reg <= (others => '0');
+			port_xx09_reg <= (others => '0');
+			ch_a_reg <= (others => '0');
+			ch_b_reg <= (others => '0');
+			ch_c_reg <= (others => '0');
+			ch_d_reg <= (others => '0');
+		else
+			if cpu_iorq_n = '0' and cpu_wr_n = '0' and cpu_a_bus(3 downto 0) = X"0" then port_xx00_reg <= cpu_do_bus; end if;
+			if cpu_iorq_n = '0' and cpu_wr_n = '0' and cpu_a_bus(3 downto 0) = X"3" then port_xx03_reg <= cpu_do_bus; end if;
+			if cpu_iorq_n = '0' and cpu_wr_n = '0' and cpu_a_bus(3 downto 0) = X"6" then port_xx06_reg <= cpu_do_bus(5 downto 0); end if;
+			if cpu_iorq_n = '0' and cpu_wr_n = '0' and cpu_a_bus(3 downto 0) = X"7" then port_xx07_reg <= cpu_do_bus(5 downto 0); end if;
+			if cpu_iorq_n = '0' and cpu_wr_n = '0' and cpu_a_bus(3 downto 0) = X"8" then port_xx08_reg <= cpu_do_bus(5 downto 0); end if;
+			if cpu_iorq_n = '0' and cpu_wr_n = '0' and cpu_a_bus(3 downto 0) = X"9" then port_xx09_reg <= cpu_do_bus(5 downto 0); end if;
+			
+			if cpu_mreq_n = '0' and cpu_rd_n = '0' and cpu_a_bus(15 downto 13) = "011" and cpu_a_bus(9 downto 8) = "00" then ch_a_reg <= ram1_do; end if;
+			if cpu_mreq_n = '0' and cpu_rd_n = '0' and cpu_a_bus(15 downto 13) = "011" and cpu_a_bus(9 downto 8) = "01" then ch_b_reg <= ram1_do; end if;
+			if cpu_mreq_n = '0' and cpu_rd_n = '0' and cpu_a_bus(15 downto 13) = "011" and cpu_a_bus(9 downto 8) = "10" then ch_c_reg <= ram1_do; end if;
+			if cpu_mreq_n = '0' and cpu_rd_n = '0' and cpu_a_bus(15 downto 13) = "011" and cpu_a_bus(9 downto 8) = "11" then ch_d_reg <= ram1_do; end if;
+		end if;
 	end if;
 end process;
 
@@ -266,11 +253,6 @@ cpu_di_bus <=
 	port_xxbb_reg when (cpu_iorq_n = '0' and cpu_rd_n = '0' and cpu_a_bus(3 downto 0) = X"1") else
 	port_xxb3_reg when (cpu_iorq_n = '0' and cpu_rd_n = '0' and cpu_a_bus(3 downto 0) = X"2") else
 	"11111111";
-
-OUTA <= ch_a_reg * port_xx06_reg;
-OUTB <= ch_b_reg * port_xx07_reg;
-OUTC <= ch_c_reg * port_xx08_reg;
-OUTD <= ch_d_reg * port_xx09_reg;
 
 ram_en <= '1' when cpu_a_bus(15 downto 14) = "01" or (cpu_a_bus(15) = '1' and port_xx00_reg(3 downto 0) /= "0000") else '0';
 ram_we <= not cpu_wr_n and not cpu_mreq_n and ram_en;
@@ -326,5 +308,23 @@ port map
 	d => cpu_do_bus,
 	q => ram2_do
 );
+
+process (CLKGS)
+begin
+	if rising_edge(CLKGS) then
+		out_a <= ch_a_reg * port_xx06_reg;
+		out_b <= ch_b_reg * port_xx07_reg;
+		out_c <= ch_c_reg * port_xx08_reg;
+		out_d <= ch_d_reg * port_xx09_reg;
+	end if;
+end process;
+
+process (CLKGS)
+begin
+	if rising_edge(CLKGS) then
+		OUTL <= ('0'&out_a) + ('0'&out_b);
+		OUTR <= ('0'&out_c) + ('0'&out_d);
+	end if;
+end process;
 
 end gs_unit;

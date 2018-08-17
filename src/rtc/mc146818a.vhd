@@ -89,10 +89,10 @@ begin
 			end case;
 	end process;
 
-	process(CLK, ENA, RESET)
+	process(CLK)
 		variable flg : std_logic := '0';
 	begin
-		if CLK'event and CLK = '1' then
+		if rising_edge(CLK) then
 			if flg /= RTC(64) then
 				seconds_reg <= RTC(7  downto 0);
 				minutes_reg <= RTC(15 downto 8);

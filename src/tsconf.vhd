@@ -347,10 +347,8 @@ signal hdmi_d1_sig	: std_logic;
 signal mouse_do		: std_logic_vector(7 downto 0);
 
 -- General Sound
-signal gs_a				: std_logic_vector(13 downto 0);
-signal gs_b				: std_logic_vector(13 downto 0);
-signal gs_c				: std_logic_vector(13 downto 0);
-signal gs_d				: std_logic_vector(13 downto 0);
+signal gs_l				: std_logic_vector(14 downto 0);
+signal gs_r				: std_logic_vector(14 downto 0);
 signal gs_do_bus		: std_logic_vector(7 downto 0);
 
 -- SAA1099
@@ -1403,10 +1401,8 @@ port map (
 	RD_n		=> cpu_rd_n,
 	IORQ_n	=> cpu_iorq_n,
 	M1_n		=> cpu_m1_n,
-	OUTA		=> gs_a,
-	OUTB		=> gs_b,
-	OUTC		=> gs_c,
-	OUTD		=> gs_d);
+	OUTL		=> gs_l,
+	OUTR		=> gs_r);
 
 U16: saa1099
 port map(
@@ -1491,7 +1487,7 @@ SD_CS_N <= sdcs_n_TS;
 -- SAA1099
 saa_wr_n <= '0' when (cpu_iorq_n = '0' and cpu_wr_n = '0' and cpu_a_bus(7 downto 0) = "11111111" and dos = '0') else '1';
 
-SOUND_L <= ("0000" & port_xxfe_reg(4) & "0000000000") + ("0000" & ssg_cn0_a & "000") + ("0000" & ssg_cn0_b & "000") + ("0000" & ssg_cn1_a & "000") + ("0000" & ssg_cn1_b & "000") + ("0000" & covox_a & "000") + ("0000" & covox_b & "000") + ("00" & gs_a) + ("00" & gs_b) + ("0000" & saa_out_l & "000");
-SOUND_R <= ("0000" & port_xxfe_reg(4) & "0000000000") + ("0000" & ssg_cn0_c & "000") + ("0000" & ssg_cn0_b & "000") + ("0000" & ssg_cn1_c & "000") + ("0000" & ssg_cn1_b & "000") + ("0000" & covox_c & "000") + ("0000" & covox_d & "000") + ("00" & gs_c) + ("00" & gs_d) + ("0000" & saa_out_r & "000");
+SOUND_L <= ("000" & port_xxfe_reg(4) & "000000000000") + ("000" & ssg_cn0_a & "00000") + ("0000" & ssg_cn0_b & "0000") + ("000" & ssg_cn1_a & "00000") + ("0000" & ssg_cn1_b & "0000") + ("00" & covox_a & "000000") + ("00" & covox_b & "000000") + ("0" & gs_l) + ("0" & saa_out_l & "0000000");
+SOUND_R <= ("000" & port_xxfe_reg(4) & "000000000000") + ("000" & ssg_cn0_c & "00000") + ("0000" & ssg_cn0_b & "0000") + ("000" & ssg_cn1_c & "00000") + ("0000" & ssg_cn1_b & "0000") + ("00" & covox_c & "000000") + ("00" & covox_d & "000000") + ("0" & gs_r) + ("0" & saa_out_r & "0000000");
 
 end rtl;
