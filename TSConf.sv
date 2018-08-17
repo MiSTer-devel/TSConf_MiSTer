@@ -152,7 +152,6 @@ wire locked;
 wire clk_mem;
 wire clk_sys;
 wire clk_28m;
-wire clk_21m;
 
 pll pll
 (
@@ -162,7 +161,6 @@ pll pll
 	.outclk_1(SDRAM_CLK),
 	.outclk_2(clk_sys),
 	.outclk_3(clk_28m),
-	.outclk_4(clk_21m),
 	.locked(locked)
 );
 
@@ -240,7 +238,6 @@ tsconf tsconf
 (
 	.clk_84mhz(clk_mem),
 	.clk_28mhz(clk_28m),
-	.clk_21mhz(clk_21m),
 
 	.SDRAM_DQ(SDRAM_DQ),
 	.SDRAM_A(SDRAM_A),

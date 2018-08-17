@@ -74,7 +74,7 @@ entity gs is
 Port (
 	RESET		: in  std_logic;
 	CLK		: in  std_logic;
-	CLKGS		: in  std_logic;
+	CE			: in  std_logic;
 	A			: in  std_logic_vector(15 downto 0);
 	DI			: in  std_logic_vector(7 downto 0);
 	DO			: out std_logic_vector(7 downto 0);
@@ -135,7 +135,8 @@ generic map (
 	IOWait		=> 1)	-- 0 => Single cycle I/O, 1 => Std I/O cycle
 port map (
 	RESET_n		=> not RESET,
-	CLK_n			=> not CLKGS,
+	CLK_n			=> CLK,
+	CEN			=> CE,
 	WAIT_n		=> '1',
 	INT_n			=> int_n,
 	NMI_n			=> '1',
@@ -145,37 +146,31 @@ port map (
 	IORQ_n		=> cpu_iorq_n,
 	RD_n			=> cpu_rd_n,
 	WR_n			=> cpu_wr_n,
-	RFSH_n		=> open,
-	HALT_n		=> open,
-	BUSAK_n		=> open,
 	A				=> cpu_a_bus,
 	DI				=> cpu_di_bus,
-	DO				=> cpu_do_bus,
-	SavePC      => open,
-	SaveINT     => open,
-	RestorePC   => (others => '1'),
-	RestoreINT  => (others => '1'),
-	RestorePC_n => '1');
+	DO				=> cpu_do_bus);
 
 	
 -- INT#
-process (CLKGS)
+process (CLK)
 begin
-	if rising_edge(CLKGS) then
-		cnt <= cnt + 1;
-		if cnt = "1000110000" then	-- 21MHz / 560 = 0.0375MHz = 37.5kHz
-			cnt <= (others => '0');
-			int_n <= '0';
-		end if;
-		if cpu_iorq_n = '0' and cpu_m1_n = '0' then
-			int_n <= '1';
+	if rising_edge(CLK) then
+		if CE = '1' then
+			cnt <= cnt + 1;
+			if cnt = "1011101010" then	-- 28MHz / 747 = 0.03748MHz = 37.48kHz
+				cnt <= (others => '0');
+				int_n <= '0';
+			end if;
+			if cpu_iorq_n = '0' and cpu_m1_n = '0' then
+				int_n <= '1';
+			end if;
 		end if;
 	end if;
 end process;
 
-process (CLKGS)
+process (CLK)
 begin
-	if rising_edge(CLKGS) then
+	if rising_edge(CLK) then
 		if (cpu_iorq_n = '0' and cpu_m1_n = '1' and cpu_a_bus(3 downto 0) = X"2") or (IORQ_n = '0' and RD_n = '0' and A(7 downto 0) = X"B3") then
 			bit7_flag <= '0';
 		elsif (cpu_iorq_n = '0' and cpu_m1_n = '1' and cpu_a_bus(3 downto 0) = X"3") or (IORQ_n = '0' and WR_n = '0' and A(7 downto 0) = X"B3") then
@@ -186,9 +181,9 @@ begin
 	end if;
 end process;
 
-process (CLKGS)
+process (CLK)
 begin
-	if rising_edge(CLKGS) then
+	if rising_edge(CLK) then
 		if cpu_iorq_n = '0' and cpu_m1_n = '1' and cpu_a_bus(3 downto 0) = X"5" then
 			bit0_flag <= '0';
 		elsif IORQ_n = '0' and WR_n = '0' and A(7 downto 0) = X"BB" then
@@ -216,9 +211,9 @@ end process;
 -- port #xxBB / #xxB3
 DO <= bit7_flag & "111111" & bit0_flag when A(3) = '1' else port_xx03_reg;
 
-process (CLKGS)
+process (CLK)
 begin
-	if rising_edge(CLKGS) then
+	if rising_edge(CLK) then
 		if RESET = '1' then
 			port_xx00_reg <= (others => '0');
 			port_xx03_reg <= (others => '0');
@@ -230,7 +225,7 @@ begin
 			ch_b_reg <= (others => '0');
 			ch_c_reg <= (others => '0');
 			ch_d_reg <= (others => '0');
-		else
+		elsif CE = '1' then
 			if cpu_iorq_n = '0' and cpu_wr_n = '0' and cpu_a_bus(3 downto 0) = X"0" then port_xx00_reg <= cpu_do_bus; end if;
 			if cpu_iorq_n = '0' and cpu_wr_n = '0' and cpu_a_bus(3 downto 0) = X"3" then port_xx03_reg <= cpu_do_bus; end if;
 			if cpu_iorq_n = '0' and cpu_wr_n = '0' and cpu_a_bus(3 downto 0) = X"6" then port_xx06_reg <= cpu_do_bus(5 downto 0); end if;
@@ -275,8 +270,8 @@ generic map
 )
 port map
 (
-	wrclock   => CLKGS,
-	rdclock   => CLKGS,
+	wrclock   => CLK,
+	rdclock   => CLK,
 	rdaddress => cpu_a_bus(14 downto 0),
 	q         => rom_do
 );
@@ -288,7 +283,7 @@ generic map (
 )
 port map
 (
-	clk => CLKGS,
+	clk => CLK,
 	we  => ram_we and not ram_addr(18),
 	addr => ram_addr(17 downto 0),
 	d => cpu_do_bus,
@@ -302,28 +297,32 @@ generic map (
 )
 port map
 (
-	clk => CLKGS,
+	clk => CLK,
 	we  => ram_we and ram_addr(18) and not ram_addr(17),
 	addr => ram_addr(16 downto 0),
 	d => cpu_do_bus,
 	q => ram2_do
 );
 
-process (CLKGS)
+process (CLK)
 begin
-	if rising_edge(CLKGS) then
-		out_a <= ch_a_reg * port_xx06_reg;
-		out_b <= ch_b_reg * port_xx07_reg;
-		out_c <= ch_c_reg * port_xx08_reg;
-		out_d <= ch_d_reg * port_xx09_reg;
+	if rising_edge(CLK) then
+		if CE = '1' then
+			out_a <= ch_a_reg * port_xx06_reg;
+			out_b <= ch_b_reg * port_xx07_reg;
+			out_c <= ch_c_reg * port_xx08_reg;
+			out_d <= ch_d_reg * port_xx09_reg;
+		end if;
 	end if;
 end process;
 
-process (CLKGS)
+process (CLK)
 begin
-	if rising_edge(CLKGS) then
-		OUTL <= ('0'&out_a) + ('0'&out_b);
-		OUTR <= ('0'&out_c) + ('0'&out_d);
+	if rising_edge(CLK) then
+		if CE = '1' then
+			OUTL <= ('0'&out_a) + ('0'&out_b);
+			OUTR <= ('0'&out_c) + ('0'&out_d);
+		end if;
 	end if;
 end process;
 

@@ -78,35 +78,34 @@ entity T80s is
 	);
 	port(
 		RESET_n		: in std_logic;
-		CLK_n		: in std_logic;
+		CLK_n			: in std_logic;
+		CEN			: in std_logic;
 		WAIT_n		: in std_logic;
-		INT_n		: in std_logic;
-		NMI_n		: in std_logic;
+		INT_n			: in std_logic;
+		NMI_n			: in std_logic;
 		BUSRQ_n		: in std_logic;
-		M1_n		: out std_logic;
+		M1_n			: out std_logic;
 		MREQ_n		: out std_logic;
 		IORQ_n		: out std_logic;
-		RD_n		: out std_logic;
-		WR_n		: out std_logic;
+		RD_n			: out std_logic;
+		WR_n			: out std_logic;
 		RFSH_n		: out std_logic;
 		HALT_n		: out std_logic;
 		BUSAK_n		: out std_logic;
-		A			: out std_logic_vector(15 downto 0);
-		DI			: in std_logic_vector(7 downto 0);
-		DO			: out std_logic_vector(7 downto 0);
+		A				: out std_logic_vector(15 downto 0);
+		DI				: in std_logic_vector(7 downto 0);
+		DO				: out std_logic_vector(7 downto 0);
 
 		SavePC      : out std_logic_vector(15 downto 0);
 		SaveINT     : out std_logic_vector(7 downto 0);
-		RestorePC   : in std_logic_vector(15 downto 0);
-		RestoreINT  : in std_logic_vector(7 downto 0);
-		
-		RestorePC_n : in std_logic
+		RestorePC   : in std_logic_vector(15 downto 0) := (others => '1');
+		RestoreINT  : in std_logic_vector(7 downto 0) := (others => '1');
+		RestorePC_n : in std_logic := '1'
 	);
 end T80s;
 
 architecture rtl of T80s is
 
-	signal CEN			: std_logic;
 	signal IntCycle_n	: std_logic;
 	signal NoRead		: std_logic;
 	signal Write		: std_logic;
@@ -116,8 +115,6 @@ architecture rtl of T80s is
 	signal TState		: std_logic_vector(2 downto 0);
 
 begin
-
-	CEN <= '1';
 
 	u0 : T80
 		generic map(
@@ -162,41 +159,43 @@ begin
 			MREQ_n <= '1';
 			DI_Reg <= "00000000";
 		elsif CLK_n'event and CLK_n = '1' then
-			RD_n <= '1';
-			WR_n <= '1';
-			IORQ_n <= '1';
-			MREQ_n <= '1';
-			if MCycle = "001" then
-				if TState = "001" or (TState = "010" and Wait_n = '0') then
-					RD_n <= not IntCycle_n;
-					MREQ_n <= not IntCycle_n;
-					IORQ_n <= IntCycle_n;
-				end if;
-				if TState = "011" then
-					MREQ_n <= '0';
-				end if;
-			else
-				if (TState = "001" or (TState = "010" and Wait_n = '0')) and NoRead = '0' and Write = '0' then
-					RD_n <= '0';
-					IORQ_n <= not IORQ;
-					MREQ_n <= IORQ;
-				end if;
-				if T2Write = 0 then
-					if TState = "010" and Write = '1' then
-						WR_n <= '0';
-						IORQ_n <= not IORQ;
-						MREQ_n <= IORQ;
+			if CEN = '1' then
+				RD_n <= '1';
+				WR_n <= '1';
+				IORQ_n <= '1';
+				MREQ_n <= '1';
+				if MCycle = "001" then
+					if TState = "001" or (TState = "010" and Wait_n = '0') then
+						RD_n <= not IntCycle_n;
+						MREQ_n <= not IntCycle_n;
+						IORQ_n <= IntCycle_n;
+					end if;
+					if TState = "011" then
+						MREQ_n <= '0';
 					end if;
 				else
-					if (TState = "001" or (TState = "010" and Wait_n = '0')) and Write = '1' then
-						WR_n <= '0';
+					if (TState = "001" or (TState = "010" and Wait_n = '0')) and NoRead = '0' and Write = '0' then
+						RD_n <= '0';
 						IORQ_n <= not IORQ;
 						MREQ_n <= IORQ;
 					end if;
+					if T2Write = 0 then
+						if TState = "010" and Write = '1' then
+							WR_n <= '0';
+							IORQ_n <= not IORQ;
+							MREQ_n <= IORQ;
+						end if;
+					else
+						if (TState = "001" or (TState = "010" and Wait_n = '0')) and Write = '1' then
+							WR_n <= '0';
+							IORQ_n <= not IORQ;
+							MREQ_n <= IORQ;
+						end if;
+					end if;
 				end if;
-			end if;
-			if TState = "010" and Wait_n = '1' then
-				DI_Reg <= DI;
+				if TState = "010" and Wait_n = '1' then
+					DI_Reg <= DI;
+				end if;
 			end if;
 		end if;
 	end process;

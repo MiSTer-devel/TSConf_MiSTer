@@ -63,7 +63,6 @@ port
 	-- Clocks
 	clk_84mhz	: in  std_logic;
 	clk_28mhz	: in  std_logic;
-	clk_21mhz	: in  std_logic;
 
 	-- SDRAM (32MB 16x16bit)
 	SDRAM_DQ		: inout std_logic_vector(15 downto 0);
@@ -863,6 +862,7 @@ generic map (
 port map (
 	RESET_n		=> not reset,
 	CLK_n			=> zclk,
+	CEN			=> '1',
 	WAIT_n		=> '1',
 	INT_n			=> cpu_int_n_TS,
 	NMI_n			=> '1',
@@ -873,16 +873,9 @@ port map (
 	RD_n			=> cpu_rd_n,
 	WR_n			=> cpu_wr_n,
 	RFSH_n		=> cpu_rfsh_n,
-	HALT_n		=> open,
-	BUSAK_n		=> open,
 	A				=> cpu_a_bus,
 	DI				=> cpu_di_bus,
-	DO				=> cpu_do_bus,
-	SavePC      => open,
-	SaveINT     => open,
-	RestorePC   => (others => '1'),
-	RestoreINT  => (others => '1'),
-	RestorePC_n => '1');
+	DO				=> cpu_do_bus);
 
 TS04: zsignals
 port map (
@@ -1393,7 +1386,7 @@ U15: entity work.gs
 port map (
 	RESET		=> reset or not GS_ENA,
 	CLK		=> clk_28mhz,
-	CLKGS		=> clk_21mhz,
+	CE			=> '1',
 	A			=> cpu_a_bus,
 	DI			=> cpu_do_bus,
 	DO			=> gs_do_bus,
