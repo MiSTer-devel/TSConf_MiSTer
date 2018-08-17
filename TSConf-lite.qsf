@@ -374,6 +374,7 @@ set_global_assignment -name VHDL_FILE src/rtc/mc146818a.vhd
 set_global_assignment -name VHDL_FILE src/sound/soundrive.vhd
 set_global_assignment -name VHDL_FILE src/sound/turbosound.vhd
 set_global_assignment -name VHDL_FILE src/sound/ay8910.vhd
+set_global_assignment -name VHDL_FILE src/sound/gs.vhd
 set_global_assignment -name VERILOG_FILE src/memory/dma.v
 set_global_assignment -name VERILOG_FILE src/memory/arbiter.v
 set_global_assignment -name VERILOG_FILE src/video/video_ts_render.v
@@ -391,7 +392,8 @@ set_global_assignment -name VERILOG_FILE src/video/mem/video_tmbuf.v
 set_global_assignment -name VERILOG_FILE src/video/mem/video_sfile.v
 set_global_assignment -name VERILOG_FILE src/video/mem/video_cram.v
 set_global_assignment -name VERILOG_FILE src/video/video_top.v
-set_global_assignment -name VHDL_FILE src/rom.vhd
+set_global_assignment -name VHDL_FILE src/gen_rom.vhd
+set_global_assignment -name VHDL_FILE src/gen_ram.vhd
 set_global_assignment -name VHDL_FILE src/keyboard.vhd
 set_global_assignment -name VERILOG_FILE src/kempston_mouse.v
 set_global_assignment -name VERILOG_FILE src/spi.v

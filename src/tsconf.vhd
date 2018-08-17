@@ -60,9 +60,10 @@ use IEEE.numeric_std.all;
 entity tsconf is
 port
 (
-	-- Clock (24MHz)
+	-- Clocks
 	clk_84mhz	: in  std_logic;
 	clk_28mhz	: in  std_logic;
+	clk_21mhz	: in  std_logic;
 
 	-- SDRAM (32MB 16x16bit)
 	SDRAM_DQ		: inout std_logic_vector(15 downto 0);
@@ -92,15 +93,16 @@ port
 	SD_CLK		: out std_logic;
 	SD_CS_N		: out std_logic;
 
-	-- External I/O
-	SOUND_L		: out std_logic_vector(10 downto 0);
-	SOUND_R		: out std_logic_vector(10 downto 0);
+	-- Audio
+	GS_ENA		: in  std_logic;
+	SOUND_L		: out std_logic_vector(15 downto 0);
+	SOUND_R		: out std_logic_vector(15 downto 0);
 
+	-- External I/O
 	COLD_RESET	: in  std_logic;
 	WARM_RESET	: in  std_logic;
 	RESET_OUT	: out std_logic;
 	RTC         : in  std_logic_vector(64 downto 0);
-
 	CMOSCfg		: in  std_logic_vector(31 downto 0);
 
 	-- PS/2 Keyboard
@@ -343,6 +345,14 @@ signal csync_ts		: std_logic;
 signal hdmi_d1_sig	: std_logic;
 
 signal mouse_do		: std_logic_vector(7 downto 0);
+
+-- General Sound
+signal gs_a				: std_logic_vector(13 downto 0);
+signal gs_b				: std_logic_vector(13 downto 0);
+signal gs_c				: std_logic_vector(13 downto 0);
+signal gs_d				: std_logic_vector(13 downto 0);
+signal gs_do_bus		: std_logic_vector(7 downto 0);
+
 -------------------------------------------------------------------------------
 -- COMPONENTS TS Lab
 -------------------------------------------------------------------------------
@@ -1251,12 +1261,20 @@ port map (
 	int_n			=> cpu_int_n_TS);
 	 
 -- ROM
-SE1: entity work.rom
-port map (
-	address	=> cpu_a_bus(12 downto 0),
-	clock	 	=> clk_28mhz,
-	q	 		=> rom_do_bus);
-
+SE1: entity work.gen_rom
+generic map
+(
+	INIT_FILE  => "src/loader_fat32/loader.mif",
+	ADDR_WIDTH => 13
+)
+port map
+(
+	wrclock   => clk_28mhz,
+	rdclock   => clk_28mhz,
+	rdaddress => cpu_a_bus(12 downto 0),
+	q         => rom_do_bus
+);
+	
 -- SDRAM Controller
 SE4: entity work.sdram
 port map (
@@ -1353,6 +1371,23 @@ port map (
 	CN1_B		=> ssg_cn1_b,
 	CN1_C		=> ssg_cn1_c);
 
+U15: entity work.gs
+port map (
+	RESET		=> reset or not GS_ENA,
+	CLK		=> clk_28mhz,
+	CLKGS		=> clk_21mhz,
+	A			=> cpu_a_bus,
+	DI			=> cpu_do_bus,
+	DO			=> gs_do_bus,
+	WR_n		=> cpu_wr_n,
+	RD_n		=> cpu_rd_n,
+	IORQ_n	=> cpu_iorq_n,
+	M1_n		=> cpu_m1_n,
+	OUTA		=> gs_a,
+	OUTB		=> gs_b,
+	OUTC		=> gs_c,
+	OUTD		=> gs_d);
+
 -------------------------------------------------------------------------------
 -- Global
 -------------------------------------------------------------------------------
@@ -1380,6 +1415,7 @@ cpu_di_bus <=
 		sdr_do_bus when (cpu_mreq_n = '0' and cpu_rd_n = '0') else 	-- SDRAM
 		im2vect	when intack = '1' else
 		mc146818a_do_bus when (cpu_iorq_n = '0' and cpu_rd_n = '0' and port_bff7 = '1' and port_eff7_reg(7) = '1') else -- MC146818A
+		gs_do_bus when (GS_ENA = '1' and cpu_iorq_n = '0' and cpu_rd_n = '0' and cpu_a_bus(7 downto 4) = "1011" and cpu_a_bus(2 downto 0) = "011") else -- General Sound
 		ssg_cn0_bus when (cpu_iorq_n = '0' and cpu_rd_n = '0' and cpu_a_bus = "1111111111111101" and ssg_sel = '0') else -- TurboSound
 		ssg_cn1_bus when (cpu_iorq_n = '0' and cpu_rd_n = '0' and cpu_a_bus = "1111111111111101" and ssg_sel = '1') else
 		key_scancode when (cpu_iorq_n = '0' and cpu_rd_n = '0' and cpu_a_bus = X"0001") else
@@ -1420,7 +1456,7 @@ port_bff7 <= '1' when (cpu_iorq_n = '0' and cpu_a_bus = X"BFF7" and cpu_m1_n = '
 -- Z-Controller
 SD_CS_N <= sdcs_n_TS;
 
-SOUND_L <= ("000" & port_xxfe_reg(4) & "0000000") + ("000" & ssg_cn0_a) + ("000" & ssg_cn0_b) + ("000" & ssg_cn1_a) + ("000" & ssg_cn1_b) + ("000" & covox_a) + ("000" & covox_b);
-SOUND_R <= ("000" & port_xxfe_reg(4) & "0000000") + ("000" & ssg_cn0_c) + ("000" & ssg_cn0_b) + ("000" & ssg_cn1_c) + ("000" & ssg_cn1_b) + ("000" & covox_c) + ("000" & covox_d);
+SOUND_L <= ("0000" & port_xxfe_reg(4) & "0000000000") + ("0000" & ssg_cn0_a & "000") + ("0000" & ssg_cn0_b & "000") + ("0000" & ssg_cn1_a & "000") + ("0000" & ssg_cn1_b & "000") + ("0000" & covox_a & "000") + ("0000" & covox_b & "000") + ("00" & gs_a) + ("00" & gs_b); -- + ("0000" & saa_out_l & "000");
+SOUND_R <= ("0000" & port_xxfe_reg(4) & "0000000000") + ("0000" & ssg_cn0_c & "000") + ("0000" & ssg_cn0_b & "000") + ("0000" & ssg_cn1_c & "000") + ("0000" & ssg_cn1_b & "000") + ("0000" & covox_c & "000") + ("0000" & covox_d & "000") + ("00" & gs_c) + ("00" & gs_d); -- + ("0000" & saa_out_r & "000");
 
 end rtl;

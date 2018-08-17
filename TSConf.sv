@@ -112,12 +112,12 @@ localparam CONF_STR = {
 	"O5,Aspect ratio,4:3,16:9;",
 	"O12,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%;",
 	"O34,Stereo mix,None,25%,50%,100%;",
+	"OS,General Sound,Enabled,Disabled;",
 	"-;",
 	"O67,CPU Speed,3.5MHz,7MHz,14MHz;",
 	"O8,CPU Cache,On,Off;",
 	"O9A,#7FFD span,128K,128K Auto,1024K,512K;",
 	"OLN,ZX Palette,Default,B.black,Light,Pale,Dark,Grayscale,Custom;",
-	"OO,NGS Reset,Off,On;",
 	"OPR,INT Offset,2,3,4,5,6,7,0,1;",
 	"-;",
 	"OBD,F11 Reset,boot.$C,sys.rom,ROM #00,ROM #04,RAM #F8;",
@@ -142,7 +142,7 @@ assign CMOSCfg[15:14]= status[15:14];
 assign CMOSCfg[18:16]= status[18:16];
 assign CMOSCfg[20:19]= status[20:19] + 2'd2;
 assign CMOSCfg[23:21]= status[23:21];
-assign CMOSCfg[24]   = status[24];
+assign CMOSCfg[24]   = 0;
 assign CMOSCfg[27:25]= status[27:25] + 3'd2;
 
 
@@ -152,6 +152,7 @@ wire locked;
 wire clk_mem;
 wire clk_sys;
 wire clk_28m;
+wire clk_21m;
 
 pll pll
 (
@@ -161,6 +162,7 @@ pll pll
 	.outclk_1(SDRAM_CLK),
 	.outclk_2(clk_sys),
 	.outclk_3(clk_28m),
+	.outclk_4(clk_21m),
 	.locked(locked)
 );
 
@@ -232,14 +234,13 @@ wire HBlank,VBlank;
 wire VSync, HSync;
 wire ce_vid;
 
-wire [10:0] laudio, raudio;
-
 wire reset;
 
 tsconf tsconf
 (
 	.clk_84mhz(clk_mem),
 	.clk_28mhz(clk_28m),
+	.clk_21mhz(clk_21m),
 
 	.SDRAM_DQ(SDRAM_DQ),
 	.SDRAM_A(SDRAM_A),
@@ -266,8 +267,9 @@ tsconf tsconf
 	.SD_CLK(sdclk),
 	.SD_CS_N(sdss),
 
-	.SOUND_L(laudio),
-	.SOUND_R(raudio),
+	.GS_ENA(~status[28]),
+	.SOUND_L(AUDIO_L),
+	.SOUND_R(AUDIO_R),
 	
 	.COLD_RESET(RESET | status[0]),
 	.WARM_RESET(buttons[1]),
@@ -281,8 +283,6 @@ tsconf tsconf
 	.joystick(joy_0[5:0] | joy_1[5:0])
 );
 
-assign AUDIO_R = {raudio, 5'd0};
-assign AUDIO_L = {laudio, 5'd0};
 assign AUDIO_S = 0;
 assign AUDIO_MIX = status[4:3];
 
