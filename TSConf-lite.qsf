@@ -378,6 +378,7 @@ set_global_assignment -name SYSTEMVERILOG_FILE src/sound/ym2203.sv
 set_global_assignment -name SYSTEMVERILOG_FILE src/sound/turbosound.sv
 set_global_assignment -name VERILOG_FILE src/sound/gs.v
 set_global_assignment -name SYSTEMVERILOG_FILE src/sound/saa1099.sv
+set_global_assignment -name SYSTEMVERILOG_FILE src/sound/compressor.sv
 set_global_assignment -name VERILOG_FILE src/memory/dma.v
 set_global_assignment -name VERILOG_FILE src/memory/arbiter.v
 set_global_assignment -name VERILOG_FILE src/video/video_ts_render.v

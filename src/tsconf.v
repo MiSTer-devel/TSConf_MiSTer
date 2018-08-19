@@ -990,7 +990,14 @@ assign port_bff7 = ~cpu_iorq_n && cpu_a_bus == 16'hBFF7 && cpu_m1_n && port_eff7
 // SAA1099
 assign saa_wr_n = ~cpu_iorq_n && ~cpu_wr_n && cpu_a_bus[7:0] == 8'hFF && ~dos;
 
-assign SOUND_L = {ts_l, 4'b0000} + {gs_l[14], gs_l} + {2'b00, covox_a, 6'b000000} + {2'b00, covox_b, 6'b000000} + {1'b0, saa_out_l, 7'b0000000} + {3'b000, port_xxfe_reg[4], 12'b000000000000};
-assign SOUND_R = {ts_r, 4'b0000} + {gs_r[14], gs_r} + {2'b00, covox_c, 6'b000000} + {2'b00, covox_d, 6'b000000} + {1'b0, saa_out_r, 7'b0000000} + {3'b000, port_xxfe_reg[4], 12'b000000000000};
+wire [11:0] audio_l = ts_l + {gs_l[14], gs_l[14:4]} + {2'b00, covox_a, 2'b00} + {2'b00, covox_b, 2'b00} + {1'b0, saa_out_l, 3'b000} + {3'b000, port_xxfe_reg[4], 8'b00000000};
+wire [11:0] audio_r = ts_r + {gs_r[14], gs_r[14:4]} + {2'b00, covox_c, 2'b00} + {2'b00, covox_d, 2'b00} + {1'b0, saa_out_r, 3'b000} + {3'b000, port_xxfe_reg[4], 8'b00000000};
+
+compressor compressor
+(
+	clk_28mhz,
+	audio_l, audio_r,
+	SOUND_L, SOUND_R
+);
 
 endmodule
