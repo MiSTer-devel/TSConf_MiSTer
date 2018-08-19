@@ -107,6 +107,8 @@ assign VIDEO_ARY = status[5] ? 8'd9  : 8'd3;
 `include "build_id.v" 
 localparam CONF_STR = {
 	"TSConf;;",
+	"S,VHD,Mount virtual SD;",
+	"-;",
 	"O5,Aspect ratio,4:3,16:9;",
 	"O12,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%;",
 	"-;",
@@ -273,7 +275,7 @@ tsconf tsconf
 	.SOUND_L(AUDIO_L),
 	.SOUND_R(AUDIO_R),
 
-	.COLD_RESET(RESET | status[0]),
+	.COLD_RESET(RESET | status[0] | reset_img),
 	.WARM_RESET(buttons[1]),
 	.RESET_OUT(reset),
 	.RTC(RTC),
@@ -350,8 +352,20 @@ wire sdmosi;
 wire sdmiso = vsd_sel ? vsdmiso : SD_MISO;
 wire sdss;
 
+reg reset_img;
 reg vsd_sel = 0;
-always @(posedge clk_sys) if(img_mounted) vsd_sel <= |img_size;
+always @(posedge clk_sys) begin
+	integer to = 0;
+	
+	if(to) to <= to - 1;
+	else reset_img <= 0;
+
+	if(img_mounted) begin
+		vsd_sel <= |img_size;
+		reset_img <= 1;
+		to <= 10000000;
+	end
+end
 
 wire vsdmiso;
 sd_card sd_card
