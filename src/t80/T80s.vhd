@@ -72,9 +72,9 @@ use work.T80_Pack.all;
 
 entity T80s is
 	generic(
-		Mode : integer := 0;	-- 0 => Z80, 1 => Fast Z80, 2 => 8080, 3 => GB
-		T2Write : integer := 0;	-- 0 => WR_n active in T3, /=0 => WR_n active in T2
-		IOWait : integer := 1	-- 0 => Single cycle I/O, 1 => Std I/O cycle
+		Mode 		: integer := 0;	-- 0 => Z80, 1 => Fast Z80, 2 => 8080, 3 => GB
+		T2Write 	: integer := 1;	-- 0 => WR_n active in T3, /=0 => WR_n active in T2
+		IOWait 	: integer := 1		-- 0 => Single cycle I/O, 1 => Std I/O cycle
 	);
 	port(
 		RESET_n		: in std_logic;
@@ -94,13 +94,7 @@ entity T80s is
 		BUSAK_n		: out std_logic;
 		A				: out std_logic_vector(15 downto 0);
 		DI				: in std_logic_vector(7 downto 0);
-		DO				: out std_logic_vector(7 downto 0);
-
-		SavePC      : out std_logic_vector(15 downto 0);
-		SaveINT     : out std_logic_vector(7 downto 0);
-		RestorePC   : in std_logic_vector(15 downto 0) := (others => '1');
-		RestoreINT  : in std_logic_vector(7 downto 0) := (others => '1');
-		RestorePC_n : in std_logic := '1'
+		DO				: out std_logic_vector(7 downto 0)
 	);
 end T80s;
 
@@ -143,12 +137,12 @@ begin
 			TS => TState,
 			IntCycle_n => IntCycle_n,
 			
-			SavePC => SavePC,
-			SaveINT => SaveINT,
-			RestorePC => RestorePC,
-			RestoreINT => RestoreINT,
+			SavePC => open,
+			SaveINT => open,
+			RestorePC => (others => '1'),
+			RestoreINT => (others => '1'),
 			
-			RestorePC_n => RestorePC_n );
+			RestorePC_n => '1' );
 
 	process (RESET_n, CLK_n)
 	begin
