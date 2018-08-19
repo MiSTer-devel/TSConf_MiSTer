@@ -8,8 +8,8 @@ This is the port of TSConf (one of ZX Spectrum clone with extra functionalities)
 * Supports both secondary SD and image on primary SD.
 * Kempston Joystick.
 * Kempston Mouse.
-* Turbosound (dual AY)
-* General Sound (384KB)
+* Turbosound FM (dual YM2203)
+* General Sound 512KB-4MB
 * SAA1099
 
 ## Installation
