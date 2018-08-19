@@ -393,7 +393,6 @@ set_global_assignment -name VERILOG_FILE src/video/mem/video_tmbuf.v
 set_global_assignment -name VERILOG_FILE src/video/mem/video_sfile.v
 set_global_assignment -name VERILOG_FILE src/video/mem/video_cram.v
 set_global_assignment -name VERILOG_FILE src/video/video_top.v
-set_global_assignment -name VHDL_FILE src/gen_rom.vhd
 set_global_assignment -name VHDL_FILE src/keyboard.vhd
 set_global_assignment -name VERILOG_FILE src/kempston_mouse.v
 set_global_assignment -name VERILOG_FILE src/spi.v

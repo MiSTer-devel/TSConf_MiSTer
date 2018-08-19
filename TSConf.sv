@@ -109,6 +109,7 @@ localparam CONF_STR = {
 	"TSConf;;",
 	"O5,Aspect ratio,4:3,16:9;",
 	"O12,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%;",
+	"-;",
 	"O34,Stereo mix,None,25%,50%,100%;",
 	"OST,General Sound,512KB,1MB,2MB,4MB;",
 	"-;",

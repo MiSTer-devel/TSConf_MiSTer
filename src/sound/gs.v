@@ -5,12 +5,13 @@
   -----------------------------------------------------------------------------
    18.08.2018	Reworked first verilog version
    19.08.2018	Produce proper signed output
-  
+   20.08.2018	Use external SDR/DDR RAM for page 2 and up
+
    CPU: Z80 @ 28MHz
    ROM: 32K
-   RAM: 128KB+
+   RAM: up to 4096KB
    INT: 37.5KHz
-  
+
    #xxBB Command register - регистр команд, доступный для записи
    #xxBB Status register - регистр состояния, доступный для чтения
   		bit 7 флаг данных
@@ -65,7 +66,7 @@
 
 */
 
-module gs #(parameter PAGES=4, ROMFILE="gs105b.mif")
+module gs #(parameter ROMFILE="gs105b.mif")
 (
    input         RESET,
    input         CLK,
@@ -222,7 +223,7 @@ assign MEM_WR   = mem_wr && |page_addr[6:1];
 assign MEM_DI   = cpu_do_bus;
 
 wire [7:0] mem_do;
-dpram #(.ADDRWIDTH(16), .NUMWORDS(2*32768), .MEM_INIT_FILE(ROMFILE)) mem
+dpram #(.ADDRWIDTH(16), .MEM_INIT_FILE(ROMFILE)) mem
 (
 	.clock(CLK),
 	.address_a(MEM_ADDR[15:0]),

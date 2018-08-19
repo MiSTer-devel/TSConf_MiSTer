@@ -778,12 +778,11 @@ zint TS13
 );
    
 // ROM
-gen_rom #(.init_file("src/loader_fat32/loader.mif"), .addr_width(13)) SE1
+dpram #(.ADDRWIDTH(13), .MEM_INIT_FILE("src/loader_fat32/loader.mif")) SE1
 (
-	.wrclock(clk_28mhz),
-	.rdclock(clk_28mhz),
-	.rdaddress(cpu_a_bus[12:0]),
-	.q(rom_do_bus)
+	.clock(clk_28mhz),
+	.address_a(cpu_a_bus[12:0]),
+	.q_a(rom_do_bus)
 );
    
 // SDRAM Controller
@@ -893,7 +892,7 @@ always @(posedge clk_84mhz) begin
 	if(ce_gs) ce_gs <= 0;
 end
 
-gs #(.PAGES(4), .ROMFILE("src/sound/gs105b.mif")) U15
+gs #("src/sound/gs105b.mif") U15
 (
 	.RESET(reset),
 	.CLK(clk_84mhz),
