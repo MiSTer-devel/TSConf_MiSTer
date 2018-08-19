@@ -92,8 +92,16 @@ port
 	SD_CLK		: out std_logic;
 	SD_CS_N		: out std_logic;
 
-	-- Audio
+	-- General Sound
 	GS_ENA		: in  std_logic;
+	GS_ADDR		: out std_logic_vector(21 downto 0);
+	GS_DI			: out std_logic_vector(7 downto 0);
+	GS_DO			: in  std_logic_vector(7 downto 0);
+	GS_RD			: out std_logic;
+	GS_WR			: out std_logic;
+	GS_WAIT		: in  std_logic;
+
+	-- Audio
 	SOUND_L		: out std_logic_vector(15 downto 0);
 	SOUND_R		: out std_logic_vector(15 downto 0);
 
@@ -349,6 +357,9 @@ signal mouse_do		: std_logic_vector(7 downto 0);
 signal gs_l				: std_logic_vector(14 downto 0);
 signal gs_r				: std_logic_vector(14 downto 0);
 signal gs_do_bus		: std_logic_vector(7 downto 0);
+signal gs_sel			: std_logic;
+signal ce_gs			: std_logic;
+
 
 -- SAA1099
 signal saa_wr_n		: std_logic;
@@ -816,6 +827,36 @@ port (
 	din		: in  std_logic_vector(7 downto 0);
 	out_l		: out std_logic_vector(7 downto 0);
 	out_r		: out std_logic_vector(7 downto 0));
+end component;
+
+component gs
+generic (
+	PAGES		: integer;
+	ROMFILE	: string
+);
+port
+(
+	RESET		: in  std_logic;
+	CLK		: in  std_logic;
+	CE			: in  std_logic;
+	
+	A			: in  std_logic;
+	DI			: in  std_logic_vector(7 downto 0);
+	DO 		: out std_logic_vector(7 downto 0);
+	CS_n		: in  std_logic;
+	WR_n		: in  std_logic;
+	RD_n		: in  std_logic;
+	
+	MEM_ADDR	: out std_logic_vector(21 downto 0);
+	MEM_DI	: out std_logic_vector(7 downto 0);
+	MEM_DO	: in  std_logic_vector(7 downto 0);
+	MEM_RD	: out std_logic;
+	MEM_WR	: out std_logic;
+	MEM_WAIT	: in  std_logic;
+	
+	OUTL		: out std_logic_vector(14 downto 0);
+	OUTR		: out std_logic_vector(14 downto 0)
+);
 end component;
 
 -------------------------------------------------------------------------------
@@ -1382,18 +1423,42 @@ port map (
 	CN1_B		=> ssg_cn1_b,
 	CN1_C		=> ssg_cn1_c);
 
-U15: entity work.gs
+
+process (clk_84mhz)
+begin
+	if rising_edge(clk_84mhz) then
+		ce_gs <= clk_28mhz;
+		if ce_gs = '1' then
+			ce_gs <= '0';
+		end if;
+	end if;
+end process;
+	
+U15: gs
+generic map
+(
+	PAGES   => 4,
+	ROMFILE => "src/sound/gs105b.mif"
+)
 port map (
-	RESET		=> reset or not GS_ENA,
-	CLK		=> clk_28mhz,
-	CE			=> '1',
-	A			=> cpu_a_bus,
+	RESET		=> reset,
+	CLK		=> clk_84mhz,
+	CE			=> ce_gs,
+
+	A			=> cpu_a_bus(3),
 	DI			=> cpu_do_bus,
 	DO			=> gs_do_bus,
+	CS_n		=> cpu_iorq_n or not gs_sel,
 	WR_n		=> cpu_wr_n,
 	RD_n		=> cpu_rd_n,
-	IORQ_n	=> cpu_iorq_n,
-	M1_n		=> cpu_m1_n,
+
+	MEM_ADDR	=> GS_ADDR,
+	MEM_DI	=> GS_DI,
+	MEM_DO	=> GS_DO,
+	MEM_RD	=> GS_RD,
+	MEM_WR	=> GS_WR,
+	MEM_WAIT	=> GS_WAIT,
+
 	OUTL		=> gs_l,
 	OUTR		=> gs_r);
 
@@ -1431,12 +1496,14 @@ cpu_addr_ext <= "100" when (loader = '1' and (cpu_a_bus(15 downto 14) = "10" or 
 
 dram_rdata <= sdr_do_bus_16;
 
+gs_sel <= '1' when GS_ENA = '1' and cpu_iorq_n = '0' and cpu_m1_n = '1' and cpu_a_bus(7 downto 4) = "1011" and cpu_a_bus(2 downto 0) = "011" else '0';
+
 cpu_di_bus <=
 		rom_do_bus when (loader = '1' and cpu_mreq_n = '0' and cpu_rd_n = '0' and cpu_a_bus(15 downto 13) = "000") else -- loader ROM
 		sdr_do_bus when (cpu_mreq_n = '0' and cpu_rd_n = '0') else 	-- SDRAM
 		im2vect	when intack = '1' else
 		mc146818a_do_bus when (cpu_iorq_n = '0' and cpu_rd_n = '0' and port_bff7 = '1' and port_eff7_reg(7) = '1') else -- MC146818A
-		gs_do_bus when (GS_ENA = '1' and cpu_iorq_n = '0' and cpu_rd_n = '0' and cpu_a_bus(7 downto 4) = "1011" and cpu_a_bus(2 downto 0) = "011") else -- General Sound
+		gs_do_bus when gs_sel='1' and cpu_rd_n = '0' else -- General Sound
 		ssg_cn0_bus when (cpu_iorq_n = '0' and cpu_rd_n = '0' and cpu_a_bus = "1111111111111101" and ssg_sel = '0') else -- TurboSound
 		ssg_cn1_bus when (cpu_iorq_n = '0' and cpu_rd_n = '0' and cpu_a_bus = "1111111111111101" and ssg_sel = '1') else
 		key_scancode when (cpu_iorq_n = '0' and cpu_rd_n = '0' and cpu_a_bus = X"0001") else
@@ -1480,7 +1547,7 @@ SD_CS_N <= sdcs_n_TS;
 -- SAA1099
 saa_wr_n <= '0' when (cpu_iorq_n = '0' and cpu_wr_n = '0' and cpu_a_bus(7 downto 0) = "11111111" and dos = '0') else '1';
 
-SOUND_L <= ("000" & port_xxfe_reg(4) & "000000000000") + ("000" & ssg_cn0_a & "00000") + ("0000" & ssg_cn0_b & "0000") + ("000" & ssg_cn1_a & "00000") + ("0000" & ssg_cn1_b & "0000") + ("00" & covox_a & "000000") + ("00" & covox_b & "000000") + ("0" & gs_l) + ("0" & saa_out_l & "0000000");
-SOUND_R <= ("000" & port_xxfe_reg(4) & "000000000000") + ("000" & ssg_cn0_c & "00000") + ("0000" & ssg_cn0_b & "0000") + ("000" & ssg_cn1_c & "00000") + ("0000" & ssg_cn1_b & "0000") + ("00" & covox_c & "000000") + ("00" & covox_d & "000000") + ("0" & gs_r) + ("0" & saa_out_r & "0000000");
+SOUND_L <= ("000" & port_xxfe_reg(4) & "000000000000") + ("000" & ssg_cn0_a & "00000") + ("0000" & ssg_cn0_b & "0000") + ("000" & ssg_cn1_a & "00000") + ("0000" & ssg_cn1_b & "0000") + ("00" & covox_a & "000000") + ("00" & covox_b & "000000") + (gs_l(14) & gs_l) + ("0" & saa_out_l & "0000000");
+SOUND_R <= ("000" & port_xxfe_reg(4) & "000000000000") + ("000" & ssg_cn0_c & "00000") + ("0000" & ssg_cn0_b & "0000") + ("000" & ssg_cn1_c & "00000") + ("0000" & ssg_cn1_b & "0000") + ("00" & covox_c & "000000") + ("00" & covox_d & "000000") + (gs_r(14) & gs_r) + ("0" & saa_out_r & "0000000");
 
 end rtl;

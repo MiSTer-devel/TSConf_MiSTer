@@ -97,8 +97,6 @@ module emu
 	output        SDRAM_nWE
 );
 
-assign {DDRAM_CLK, DDRAM_BURSTCNT, DDRAM_ADDR, DDRAM_DIN, DDRAM_BE, DDRAM_RD, DDRAM_WE} = '0;
-
 assign LED_USER  = vsd_sel & sd_act;
 assign LED_DISK  = {1'b1, ~vsd_sel & sd_act};
 assign LED_POWER = 0;
@@ -112,7 +110,7 @@ localparam CONF_STR = {
 	"O5,Aspect ratio,4:3,16:9;",
 	"O12,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%;",
 	"O34,Stereo mix,None,25%,50%,100%;",
-	"OS,General Sound,Enabled,Disabled;",
+	"OST,General Sound,512KB,1MB,2MB,4MB;",
 	"-;",
 	"O67,CPU Speed,3.5MHz,7MHz,14MHz;",
 	"O8,CPU Cache,On,Off;",
@@ -264,10 +262,16 @@ tsconf tsconf
 	.SD_CLK(sdclk),
 	.SD_CS_N(sdss),
 
-	.GS_ENA(~status[28]),
+	.GS_ENA(1),
+	.GS_ADDR(gs_mem_addr),
+	.GS_DI(gs_mem_din),
+	.GS_DO(gs_mem_dout | gs_mem_mask),
+	.GS_RD(gs_mem_rd),
+	.GS_WR(gs_mem_wr),
+	.GS_WAIT(~gs_mem_ready), 	
 	.SOUND_L(AUDIO_L),
 	.SOUND_R(AUDIO_R),
-	
+
 	.COLD_RESET(RESET | status[0]),
 	.WARM_RESET(buttons[1]),
 	.RESET_OUT(reset),
@@ -280,7 +284,39 @@ tsconf tsconf
 	.joystick(joy_0[5:0] | joy_1[5:0])
 );
 
-assign AUDIO_S = 0;
+assign DDRAM_CLK = clk_mem;
+
+wire [21:0] gs_mem_addr;
+wire  [7:0] gs_mem_dout;
+wire  [7:0] gs_mem_din;
+wire        gs_mem_rd;
+wire        gs_mem_wr;
+wire        gs_mem_ready;
+reg   [7:0] gs_mem_mask;
+
+always_comb begin
+	gs_mem_mask = 0;
+	case(status[29:28])
+		0: if(gs_mem_addr[21:19]) gs_mem_mask = 8'hFF;
+		1: if(gs_mem_addr[21:20]) gs_mem_mask = 8'hFF;
+		2: if(gs_mem_addr[21]   ) gs_mem_mask = 8'hFF;
+		3:                        gs_mem_mask = 0;
+	endcase
+end
+
+ddram ddram
+(
+	.*,
+
+	.addr(gs_mem_addr),
+	.dout(gs_mem_dout),
+	.din(gs_mem_din),
+	.we(gs_mem_wr),
+	.rd(gs_mem_rd),
+	.ready(gs_mem_ready)
+);
+
+assign AUDIO_S = 1;
 assign AUDIO_MIX = status[4:3];
 
 reg ce_pix;
