@@ -158,7 +158,6 @@ wire        dram_rnw;
 // Port
 reg [7:0]   port_xxfe_reg;
 reg [7:0]   port_xx01_reg;
-reg         ena_1_75mhz;
 reg [5:0]   ena_cnt;
 // System
 wire        reset;
@@ -184,16 +183,6 @@ wire [7:0]  covox_a;
 wire [7:0]  covox_b;
 wire [7:0]  covox_c;
 wire [7:0]  covox_d;
-// TurboSound
-wire        ssg_sel;
-wire [7:0]  ssg_cn0_bus;
-wire [7:0]  ssg_cn0_a;
-wire [7:0]  ssg_cn0_b;
-wire [7:0]  ssg_cn0_c;
-wire [7:0]  ssg_cn1_bus;
-wire [7:0]  ssg_cn1_a;
-wire [7:0]  ssg_cn1_b;
-wire [7:0]  ssg_cn1_c;
 // clock
 wire        f0;
 wire        f1;
@@ -865,28 +854,38 @@ soundrive SE10
 	.outd(covox_d)
 );
 
-// TurboSound
+reg ce_ym, ce_cpu;
+always @(posedge clk_28mhz) begin
+	reg [1:0] div;
+	
+	div <= div + 1'd1;
+	ce_ym <= !div;
+	
+	ce_cpu <= zclk;
+	if(ce_cpu) ce_cpu <= 0;
+end
+
+wire ts_enable = cpu_a_bus[0] & cpu_a_bus[15] & ~cpu_a_bus[1];
+wire ts_we     = ts_enable & ~cpu_iorq_n & ~cpu_wr_n;
+
+wire [11:0] ts_l, ts_r;
+wire  [7:0] ts_do;
+
 turbosound SE12
 (
-	.reset(reset),
-	.clk(clk_28mhz),
-	.ena(ena_1_75mhz),
-	.a(cpu_a_bus),
-	.di(cpu_do_bus),
-	.wr_n(cpu_wr_n),
-	.iorq_n(cpu_iorq_n),
-	.m1_n(cpu_m1_n),
-	.sel(ssg_sel),
-	.cn0_do(ssg_cn0_bus),
-	.cn0_a(ssg_cn0_a),
-	.cn0_b(ssg_cn0_b),
-	.cn0_c(ssg_cn0_c),
-	.cn1_do(ssg_cn1_bus),
-	.cn1_a(ssg_cn1_a),
-	.cn1_b(ssg_cn1_b),
-	.cn1_c(ssg_cn1_c)
+	.RESET(reset),
+
+	.CLK(clk_28mhz),
+	.CE_CPU(ce_cpu),
+	.CE_YM(ce_ym),
+	.BDIR(ts_we),
+	.BC(cpu_a_bus[14]),
+	.DI(cpu_do_bus),
+	.DO(ts_do),
+	.CHANNEL_L(ts_l),
+	.CHANNEL_R(ts_r)
 );
-   
+
 always @(posedge clk_84mhz) begin
 	ce_gs <= clk_28mhz;
 	if(ce_gs) ce_gs <= 0;
@@ -937,7 +936,6 @@ assign RESET_OUT = reset;
 
 always @(negedge clk_28mhz) begin
 	ena_cnt <= ena_cnt + 1'd1;
-	ena_1_75mhz <= ~ena_cnt[3] & ena_cnt[2] & ena_cnt[1] & ena_cnt[0];
 	ena_0_4375mhz <= ~ena_cnt[5] & ena_cnt[4] & ena_cnt[3] & ena_cnt[2] & ena_cnt[1] & ena_cnt[0];
 end
 
@@ -953,8 +951,7 @@ assign cpu_di_bus = (loader && ~cpu_mreq_n && ~cpu_rd_n && !cpu_a_bus[15:13]) ? 
 						  (intack) ? im2vect : 
 						  (~cpu_iorq_n && ~cpu_rd_n && port_bff7 && port_eff7_reg[7]) ? mc146818a_do_bus : 		// MC146818A
 						  (gs_sel && ~cpu_rd_n) ? gs_do_bus : 		// General Sound
-						  (~cpu_iorq_n && ~cpu_rd_n && cpu_a_bus == 16'hFFFD && ~ssg_sel) ? ssg_cn0_bus : 		// TurboSound
-						  (~cpu_iorq_n && ~cpu_rd_n && cpu_a_bus == 16'hFFFD &&  ssg_sel) ? ssg_cn1_bus : 
+						  (~cpu_iorq_n && ~cpu_rd_n && ts_enable) ? ts_do : 		// TurboSound
 						  (~cpu_iorq_n && ~cpu_rd_n && cpu_a_bus == 16'h0001) ? key_scancode : 
 						  (ena_ports) ? dout_ports : 
 						  8'b11111111;
@@ -993,7 +990,7 @@ assign port_bff7 = ~cpu_iorq_n && cpu_a_bus == 16'hBFF7 && cpu_m1_n && port_eff7
 // SAA1099
 assign saa_wr_n = ~cpu_iorq_n && ~cpu_wr_n && cpu_a_bus[7:0] == 8'hFF && ~dos;
 
-assign SOUND_L = ({3'b000, port_xxfe_reg[4], 12'b000000000000}) + ({3'b000, ssg_cn0_a, 5'b00000}) + ({4'b0000, ssg_cn0_b, 4'b0000}) + ({3'b000, ssg_cn1_a, 5'b00000}) + ({4'b0000, ssg_cn1_b, 4'b0000}) + ({2'b00, covox_a, 6'b000000}) + ({2'b00, covox_b, 6'b000000}) + ({gs_l[14], gs_l}) + ({1'b0, saa_out_l, 7'b0000000});
-assign SOUND_R = ({3'b000, port_xxfe_reg[4], 12'b000000000000}) + ({3'b000, ssg_cn0_c, 5'b00000}) + ({4'b0000, ssg_cn0_b, 4'b0000}) + ({3'b000, ssg_cn1_c, 5'b00000}) + ({4'b0000, ssg_cn1_b, 4'b0000}) + ({2'b00, covox_c, 6'b000000}) + ({2'b00, covox_d, 6'b000000}) + ({gs_r[14], gs_r}) + ({1'b0, saa_out_r, 7'b0000000});
-   
+assign SOUND_L = {ts_l, 4'b0000} + {gs_l[14], gs_l} + {2'b00, covox_a, 6'b000000} + {2'b00, covox_b, 6'b000000} + {1'b0, saa_out_l, 7'b0000000} + {3'b000, port_xxfe_reg[4], 12'b000000000000};
+assign SOUND_R = {ts_r, 4'b0000} + {gs_r[14], gs_r} + {2'b00, covox_c, 6'b000000} + {2'b00, covox_d, 6'b000000} + {1'b0, saa_out_r, 7'b0000000} + {3'b000, port_xxfe_reg[4], 12'b000000000000};
+
 endmodule
