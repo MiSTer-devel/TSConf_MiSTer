@@ -265,7 +265,6 @@ tsconf tsconf
 	.SD_CLK(sdclk),
 	.SD_CS_N(sdss),
 
-	.GS_ENA(1),
 	.GS_ADDR(gs_mem_addr),
 	.GS_DI(gs_mem_din),
 	.GS_DO(gs_mem_dout | gs_mem_mask),
