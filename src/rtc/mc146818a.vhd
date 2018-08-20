@@ -105,36 +105,35 @@ begin
 			end if;
 
 			flg := RTC(64);
-			if RESET = '1' then
-				b_reg <= "00000010";
-			-- RTC register write
-			elsif WR = '1' and CS = '1' then
-				case A(7 downto 0) is
-					when x"00" => seconds_reg <= DI;
-					when x"01" => seconds_alarm_reg <= DI;
-					when x"02" => minutes_reg <= DI;
-					when x"03" => minutes_alarm_reg <= DI;
-					when x"04" => hours_reg <= DI;
-					when x"05" => hours_alarm_reg <= DI;
-					when x"06" => weeks_reg <= DI;
-					when x"07" => days_reg <= DI;
-					when x"08" => month_reg <= DI;
-					when x"09" => year_reg <= DI;
-					when x"0b" => b_reg <= DI;
-					
-					if b_reg(2) = '0' then -- BCD to BIN convertion
-						if DI(4) = '0' then
-							leap_reg <= DI(1 downto 0);
-						else
-							leap_reg <= (not DI(1)) & DI(0);
-						end if;
-					else 
-						leap_reg <= DI(1 downto 0);
-					end if;
-									
-					when others   => null;
-				end case;
-			end if;
+--			if RESET = '1' then
+--				b_reg <= "00000010";
+--			elsif WR = '1' and CS = '1' then
+--				case A(7 downto 0) is
+--					when x"00" => seconds_reg <= DI;
+--					when x"01" => seconds_alarm_reg <= DI;
+--					when x"02" => minutes_reg <= DI;
+--					when x"03" => minutes_alarm_reg <= DI;
+--					when x"04" => hours_reg <= DI;
+--					when x"05" => hours_alarm_reg <= DI;
+--					when x"06" => weeks_reg <= DI;
+--					when x"07" => days_reg <= DI;
+--					when x"08" => month_reg <= DI;
+--					when x"09" => year_reg <= DI;
+--					when x"0b" => b_reg <= DI;
+--					
+--					if b_reg(2) = '0' then -- BCD to BIN convertion
+--						if DI(4) = '0' then
+--							leap_reg <= DI(1 downto 0);
+--						else
+--							leap_reg <= (not DI(1)) & DI(0);
+--						end if;
+--					else 
+--						leap_reg <= DI(1 downto 0);
+--					end if;
+--									
+--					when others   => null;
+--				end case;
+--			end if;
 			
 			if RESET = '1' then
 				a_reg <= "00100110";
@@ -154,7 +153,7 @@ begin
 						c_reg(5) <= '1';
 					end if;
 					-- DM binary-coded-decimal (BCD) data mode
-					if b_reg(2) = '0' then
+					--if b_reg(2) = '0' then
 						if seconds_reg(3 downto 0) /= "1001" then
 							seconds_reg(3 downto 0) <= seconds_reg(3 downto 0) + 1;
 						else
@@ -231,59 +230,59 @@ begin
 							end if;
 						end if;
 					-- DM binary data mode
-					else
-						if seconds_reg /= x"3B" then
-							seconds_reg <= seconds_reg + 1;
-						else
-							seconds_reg <= (others => '0');
-							if minutes_reg /= x"3B" then
-								minutes_reg <= minutes_reg + 1;
-							else
-								minutes_reg <= (others => '0');
-								if b_reg(1) & hours_reg(7) & hours_reg(3 downto 0) = "001100" then
-									hours_reg(7 downto 0) <= "10000001";
-								elsif ((b_reg(1) & hours_reg(7) & hours_reg(3 downto 0) /= "011100") and
-									(b_reg(1) & hours_reg(4 downto 0) /= "110111")) then
-									hours_reg(4 downto 0) <= hours_reg(4 downto 0) + 1;
-								else
-									if b_reg(1) = '0' then
-										hours_reg(7 downto 0) <= "00000001";
-									else
-										hours_reg <= (others => '0');
-									end if;
-									if weeks_reg /= x"07" then
-										weeks_reg <= weeks_reg + 1;
-									else
-										weeks_reg <= x"01"; -- Sunday = 1
-									end if;
-									if ((month_reg & days_reg & leap_reg = X"021C" & "01") or
-										(month_reg & days_reg & leap_reg = X"021C" & "10") or
-										(month_reg & days_reg & leap_reg = X"021C" & "11") or
-										(month_reg & days_reg & leap_reg = X"021D" & "00") or
-										(month_reg & days_reg = X"041E") or
-										(month_reg & days_reg = X"061E") or
-										(month_reg & days_reg = X"091E") or
-										(month_reg & days_reg = X"0B1E") or
-										(			 days_reg = X"1F")) then
-										days_reg <= x"01";
-										if month_reg /= x"0C" then
-											month_reg <= month_reg + 1;
-										else
-											month_reg <= x"01";
-											leap_reg(1 downto 0) <= leap_reg(1 downto 0) + 1;
-											if year_reg /= x"63" then
-												year_reg <= year_reg + 1;
-											else
-												year_reg <= x"00";
-											end if;
-										end if;
-									else
-										days_reg <= days_reg + 1;
-									end if;
-								end if;
-							end if;
-						end if;
-					end if;
+--					else
+--						if seconds_reg /= x"3B" then
+--							seconds_reg <= seconds_reg + 1;
+--						else
+--							seconds_reg <= (others => '0');
+--							if minutes_reg /= x"3B" then
+--								minutes_reg <= minutes_reg + 1;
+--							else
+--								minutes_reg <= (others => '0');
+--								if b_reg(1) & hours_reg(7) & hours_reg(3 downto 0) = "001100" then
+--									hours_reg(7 downto 0) <= "10000001";
+--								elsif ((b_reg(1) & hours_reg(7) & hours_reg(3 downto 0) /= "011100") and
+--									(b_reg(1) & hours_reg(4 downto 0) /= "110111")) then
+--									hours_reg(4 downto 0) <= hours_reg(4 downto 0) + 1;
+--								else
+--									if b_reg(1) = '0' then
+--										hours_reg(7 downto 0) <= "00000001";
+--									else
+--										hours_reg <= (others => '0');
+--									end if;
+--									if weeks_reg /= x"07" then
+--										weeks_reg <= weeks_reg + 1;
+--									else
+--										weeks_reg <= x"01"; -- Sunday = 1
+--									end if;
+--									if ((month_reg & days_reg & leap_reg = X"021C" & "01") or
+--										(month_reg & days_reg & leap_reg = X"021C" & "10") or
+--										(month_reg & days_reg & leap_reg = X"021C" & "11") or
+--										(month_reg & days_reg & leap_reg = X"021D" & "00") or
+--										(month_reg & days_reg = X"041E") or
+--										(month_reg & days_reg = X"061E") or
+--										(month_reg & days_reg = X"091E") or
+--										(month_reg & days_reg = X"0B1E") or
+--										(			 days_reg = X"1F")) then
+--										days_reg <= x"01";
+--										if month_reg /= x"0C" then
+--											month_reg <= month_reg + 1;
+--										else
+--											month_reg <= x"01";
+--											leap_reg(1 downto 0) <= leap_reg(1 downto 0) + 1;
+--											if year_reg /= x"63" then
+--												year_reg <= year_reg + 1;
+--											else
+--												year_reg <= x"00";
+--											end if;
+--										end if;
+--									else
+--										days_reg <= days_reg + 1;
+--									end if;
+--								end if;
+--							end if;
+--						end if;
+--					end if;
 				end if;
 			end if;
 		end if;
