@@ -57,136 +57,91 @@
 //  to the known state from any operational state, set speed=0 and start=1 for 8 clks
 //  (that starts Fclk/Fspi=2 speed transfer for sure), then remain start=0, speed=0 for at least 18 clks.
 
-//`include "../include/tune.v"
-
-
-module spi(
+module spi
+(
 // SPI wires
 	input  wire       clk,      // system clk
 	output wire       sck,      // SPI bus pins...
 	output wire       sdo,      //
 	input  wire       sdi,      //
+
 // controls
 	output wire       stb,      // ready strobe, 1 clock length
 	output wire       start,    // start strobe, 1 clock length
-	// output wire       rdy,      // ready (idle) - when module can accept data
 	output reg        bsync,    // for vs1001	
+
 // DMA interface
 	input  wire       dma_req,
 	input  wire [7:0] dma_din,	
+
 // Z80 interface
 	input  wire       cpu_req,
 	input  wire [7:0] cpu_din,
 	output reg  [7:0] dout,
+
 // configuration
-	input  wire [1:0] speed,    // =2'b00 - sck full speed (1/2 of clk), =2'b01 - half (1/4 of clk), =2'b10 - one fourth (1/8 of clk), =2'b11 - one eighth (1/16 of clk)	
-	output reg [2:0] tst
+	input  wire [1:0] speed    // =0 - sck full speed (1/2 of clk), =1 - half (1/4 of clk), =2 - one fourth (1/8 of clk), =3 - one eighth (1/16 of clk)
 );
 
-	always @*
-		if (stb)
-			tst = 5;
-		else if (start)
-			tst = 3;
-		else if (dma_req)
-			tst = 1;
-		else if (cpu_req)
-			tst = 4;
-		else tst = 0;
-	
-	wire req = cpu_req || dma_req;
-	wire [7:0] din = dma_req ? dma_din : cpu_din;
+wire req = cpu_req || dma_req;
+wire [7:0] din = dma_req ? dma_din : cpu_din;
 
-	//initial // for simulation only!
-	//begin
-	//	counter = 5'b10000;
-	//	shiftout = 8'd0;
-	//	shiftout = 7'd0;
-	//	bsync = 1'd0;
-	//	dout = 1'b0;
-	//end
+// sdo is high bit of shiftout
+assign sdo = shiftout[7];
+wire ena_shout_load = (start || sck) & g_ena;     // enable load of shiftout register
+assign sck = counter[0];
+wire rdy = counter[4];         // =0 when transmission in progress
+assign stb = stb_r && !rdy;
+assign start = req && rdy;
 
-	// sdo is high bit of shiftout
-	assign sdo = shiftout[7];
-	wire ena_shout_load = (start || sck) & g_ena;     // enable load of shiftout register
-	assign sck = counter[0];
-	wire rdy = counter[4];         // =0 when transmission in progress
-	assign stb = stb_r && !rdy;
-	assign start = req && rdy;
-
-	reg [6:0] shiftin; 	// shifting in data from sdi before emitting it on dout
-	reg [4:0] counter; 	// handles transmission
-	reg stb_r;
-	always @(posedge clk)
-	begin
-		if (g_ena)
-		begin
-			if (start)
-			begin
-				counter <= 5'b0; 	// rdy = 0; sck = 0;
-				bsync <= 1'b1; 	// begin bsync pulse
-				stb_r <= 1'b0;
-			end
-			else
-			begin
-				if (!sck) // on the rising edge of sck
-				begin
-					shiftin[6:0] <= {shiftin[5:0], sdi};
-					if (&counter[3:1] && !rdy)
-					begin
-						dout <= {shiftin[6:0], sdi}; // update dout at the last sck rising edge
-						stb_r <= 1'b1;
-					end
+reg [6:0] shiftin; 	// shifting in data from sdi before emitting it on dout
+reg [4:0] counter; 	// handles transmission
+reg stb_r;
+always @(posedge clk) begin
+	if (g_ena) begin
+		if (start) begin
+			counter <= 5'b0; 	// rdy = 0; sck = 0;
+			bsync <= 1'b1; 	// begin bsync pulse
+			stb_r <= 1'b0;
+		end
+		else begin
+			if (!sck) begin // on the rising edge of sck
+				shiftin[6:0] <= {shiftin[5:0], sdi};
+				if (&counter[3:1] && !rdy) begin
+					dout <= {shiftin[6:0], sdi}; // update dout at the last sck rising edge
+					stb_r <= 1'b1;
 				end
-				else // on the falling edge of sck
-				begin
-					bsync <= 1'b0;
-				end
-				if (!rdy)
-					counter <= counter + 5'd1;
 			end
+			else begin // on the falling edge of sck
+				bsync <= 1'b0;
+			end
+			if (!rdy) counter <= counter + 5'd1;
 		end
 	end
+end
 
 
-	// shiftout treatment is done so just to save LCELLs in acex1k
-	reg [7:0] shiftout; // shifting out data to the sdo
-	always @(posedge clk)
-	begin
-		if (ena_shout_load)
-		begin
-			if (start)
-				shiftout <= din;
-			else // sck
-				shiftout[7:0] <= {shiftout[6:0], shiftout[0]}; // last bit remains after end of exchange
-		end
+// shiftout treatment is done so just to save LCELLs in acex1k
+reg [7:0] shiftout; // shifting out data to the sdo
+always @(posedge clk) begin
+	if (ena_shout_load) begin
+		if (start) shiftout <= din;
+		else shiftout[7:0] <= {shiftout[6:0], shiftout[0]}; // last bit remains after end of exchange
 	end
+end
 
-
-	// slow speeds - controlled by g_ena
-	reg [2:0] wcnt;
-	always @(posedge clk)
-	begin
-		if (|speed)
-		begin
-			if (start)
-				wcnt <= 3'b001;
-			else if (rdy)
-				wcnt <= 3'b000;
-			else
-				wcnt <= wcnt + 3'd1;
-		end
-		else
-			wcnt <= 3'b000;
+// slow speeds - controlled by g_ena
+reg [2:0] wcnt;
+always @(posedge clk) begin
+	if (|speed) begin
+		if (start) wcnt <= 1;
+		else if (rdy) wcnt <= 0;
+		else wcnt <= wcnt + 1'd1;
 	end
+	else wcnt <= 0;
+end
 
-
-	wire g_ena = g_en[speed];
-   wire g_en[0:3];
-   assign g_en[0] = 1'b1;
-   assign g_en[1] = ~|wcnt[0];
-   assign g_en[2] = ~|wcnt[1:0];
-   assign g_en[3] = ~|wcnt[2:0];
-
+wire [3:0] g_en = {~|wcnt[2:0], ~|wcnt[1:0], ~|wcnt[0], 1'b1};
+wire g_ena = g_en[speed];
 
 endmodule

@@ -296,7 +296,6 @@ wire [7:0]  mouse_do;
 clock TS01
 (
 	.clk(clk_28mhz),
-	.ay_mod(0),
 	.f0(f0),
 	.f1(f1),
 	.h0(h0),
@@ -304,8 +303,7 @@ clock TS01
 	.c0(c0),
 	.c1(c1),
 	.c2(c2),
-	.c3(c3),
-	.ce_saa(ce_saa)
+	.c3(c3)
 );
 
 zclock TS02
@@ -330,11 +328,11 @@ T80s #(.mode(0), .t2write(1), .iowait(1)) z80_unit
 (
 	.reset_n((~reset)),
 	.clk_n(zclk),
-	.cen(1'b1),
-	.wait_n(1'b1),
+	.cen(1),
+	.wait_n(1),
 	.int_n(cpu_int_n_TS),
-	.nmi_n(1'b1),
-	.busrq_n(1'b1),
+	.nmi_n(1),
+	.busrq_n(1),
 	.m1_n(cpu_m1_n),
 	.mreq_n(cpu_mreq_n),
 	.iorq_n(cpu_iorq_n),
@@ -438,12 +436,12 @@ zports TS05
 	.vdos_on(vdos_on),
 	.vdos_off(vdos_off),
 	.rstrom(2'b11),
-	.tape_read(1'b1),
+	.tape_read(1),
 	.keys_in(kb_do_bus),		// keys (port FE)
 	.mus_in(mouse_do),		// mouse (xxDF)
 	.kj_in(joystick),
-	.vg_intrq(1'b0),
-	.vg_drq(1'b0),		// from vg93 module - drq + irq read
+	.vg_intrq(0),
+	.vg_drq(0),		// from vg93 module - drq + irq read
 	.sdcs_n(SD_CS_N),		// to SD card
 	.sd_start(cpu_spi_req),		// to SPI
 	.sd_datain(cpu_spi_din),		// to SPI(7 downto 0);
@@ -453,7 +451,7 @@ zports TS05
 	.com_data_rx(8'b00000000),		//uart_do_bus,
 	.com_status(8'b10010000),		//'1' & uart_tx_empty & uart_tx_fifo_empty & "1000" & uart_rx_avail,
 	//com_status=> '0' & uart_tx_empty & uart_tx_fifo_empty & "0000" & '1',
-	.lock_conf(1'b1)
+	.lock_conf(1)
 );
 
 zmem TS06
@@ -495,8 +493,8 @@ zmem TS06
 	.cpu_latch(cpu_latch),
 	.cpu_stall(cpu_stall),		// for Zclock if HI-> STALL (ZCLK)
 	.loader(0),		// ROM for loader active
-	.testkey(1'b1),
-	.intt(1'b0)
+	.testkey(1),
+	.intt(0)
 );
 
 arbiter TS07
@@ -665,8 +663,7 @@ zmaps TS10
 	.cram_we(cram_we),
 	.sfile_we(sfile_we)
 );
-   
-   
+
 spi TS11
 (
 	.clk(clk_28mhz),
@@ -680,7 +677,7 @@ spi TS11
 	.cpu_req(cpu_spi_req),
 	.cpu_din(cpu_spi_din),
 	.dout(spi_dout),
-	.speed(2'b00)
+	.speed(0)
 );
 
 zint TS13
@@ -738,7 +735,7 @@ sdram SE4
 
 // PS/2 Keyboard
 wire [4:0] kb_do_bus;
-wire [4:0] kb_f_bus;
+wire       key_reset;
 wire [7:0] key_scancode;
 
 keyboard SE5
@@ -747,7 +744,7 @@ keyboard SE5
 	.reset(COLD_RESET | WARM_RESET),
 	.a(cpu_a_bus[15:8]),
 	.keyb(kb_do_bus),
-	.keyf(kb_f_bus),
+	.KEY_RESET(key_reset),
 	.scancode(key_scancode),
 	.ps2_key(PS2_KEY)
 );
@@ -784,7 +781,7 @@ mc146818a SE9
 	.reset(reset),
 	.clk(clk_28mhz),
 	.ena(ena_0_4375mhz),
-	.cs(1'b1),
+	.cs(1),
 	.keyscancode(key_scancode),
 	.rtc(RTC),
 	.cmoscfg(CMOSCfg),
@@ -805,7 +802,7 @@ soundrive SE10
 (
 	.reset(reset),
 	.clk(clk_28mhz),
-	.cs(1'b1),
+	.cs(1),
 	.wr_n(cpu_wr_n),
 	.a(cpu_a_bus[7:0]),
 	.di(cpu_do_bus),
@@ -891,15 +888,24 @@ gs #("src/sound/gs105b.mif") U15
 // SAA1099
 wire [7:0]  saa_out_l;
 wire [7:0]  saa_out_r;
-wire        ce_saa;
 wire        saa_wr_n = ~cpu_iorq_n && ~cpu_wr_n && cpu_a_bus[7:0] == 8'hFF && ~dos;
+
+reg ce_saa;
+always @(posedge clk_28mhz) begin
+	reg [2:0] div;
+
+	div <= div + 1'd1;
+	if(div == 6) div <= 0;
+
+	ce_saa <= (div == 0 || div == 3);
+end
 
 saa1099 U16
 (
 	.clk_sys(clk_28mhz),
 	.ce(ce_saa),
-	.rst_n((~reset)),
-	.cs_n(1'b0),
+	.rst_n(~reset),
+	.cs_n(0),
 	.a0(cpu_a_bus[8]),		// 0=data, 1=address
 	.wr_n(saa_wr_n),
 	.din(cpu_do_bus),
@@ -921,7 +927,7 @@ compressor compressor
 //-----------------------------------------------------------------------------
 // Global
 //-----------------------------------------------------------------------------
-wire reset = COLD_RESET | WARM_RESET | kb_f_bus[1];		// Reset
+wire reset = COLD_RESET | WARM_RESET | key_reset;
 assign RESET_OUT = reset;
 
 // CPU interface
