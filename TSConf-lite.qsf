@@ -367,8 +367,7 @@ set_global_assignment -name VERILOG_FILE src/cpu/zmem.v
 set_global_assignment -name VERILOG_FILE src/cpu/zmaps.v
 set_global_assignment -name VERILOG_FILE src/cpu/zint.v
 set_global_assignment -name VERILOG_FILE src/cpu/zclock.v
-set_global_assignment -name VHDL_FILE src/rtc/CMOS.vhd
-set_global_assignment -name VHDL_FILE src/rtc/mc146818a.vhd
+set_global_assignment -name VERILOG_FILE src/rtc/mc146818a.v
 set_global_assignment -name VHDL_FILE src/sound/soundrive.vhd
 set_global_assignment -name QIP_FILE src/sound/jt12/jt12.qip
 set_global_assignment -name SYSTEMVERILOG_FILE src/sound/ym2149.sv

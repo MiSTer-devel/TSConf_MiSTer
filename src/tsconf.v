@@ -787,17 +787,17 @@ end
 
 mc146818a SE9
 (
-	.reset(reset),
-	.clk(clk_28mhz),
-	.ena(ena_0_4375mhz),
-	.cs(1),
-	.keyscancode(key_scancode),
-	.rtc(RTC),
-	.cmoscfg(CMOSCfg),
-	.wr(mc146818a_wr),
-	.a(gluclock_addr[7:0]),
-	.di(cpu_do_bus),
-	.do(mc146818a_do_bus)
+	.RESET(reset),
+	.CLK(clk_28mhz),
+	.ENA(ena_0_4375mhz),
+	.CS(1),
+	.KEYSCANCODE(key_scancode),
+	.RTC(RTC),
+	.CMOSCfg(CMOSCfg),
+	.WR(mc146818a_wr),
+	.A(gluclock_addr[7:0]),
+	.DI(cpu_do_bus),
+	.DO(mc146818a_do_bus)
 );
 
 
