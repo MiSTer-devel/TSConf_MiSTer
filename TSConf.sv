@@ -97,7 +97,7 @@ module emu
 	output        SDRAM_nWE
 );
 
-assign LED_USER  = vsd_sel & sd_act;
+assign LED_USER  = (vsd_sel & sd_act) | ioctl_download;
 assign LED_DISK  = {1'b1, ~vsd_sel & sd_act};
 assign LED_POWER = 0;
 
@@ -148,7 +148,6 @@ assign CMOSCfg[27:25]= status[27:25] + 3'd2;
 
 
 ////////////////////   CLOCKS   ///////////////////
-
 wire locked;
 wire clk_mem;
 wire clk_sys;
@@ -191,6 +190,12 @@ wire [63:0] img_size;
 wire        sd_ack_conf;
 wire [64:0] RTC;
 
+wire        ioctl_wr;
+wire [24:0] ioctl_addr;
+wire  [7:0] ioctl_dout;
+wire        ioctl_download;
+wire  [7:0] ioctl_index;
+
 hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 (
 	.clk_sys(clk_sys),
@@ -225,9 +230,20 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 	.img_readonly(img_readonly),
 	.img_size(img_size),
 
-	.ioctl_wait(0)
+	.ioctl_wr(ioctl_wr),
+	.ioctl_addr(ioctl_addr),
+	.ioctl_dout(ioctl_dout),
+	.ioctl_download(ioctl_download),
+	.ioctl_index(ioctl_index)
 );
 
+reg [2:0] loader_wr;
+always @(posedge clk_sys) begin
+	if(ioctl_wr && ioctl_download && !ioctl_index && !ioctl_addr[24:16]) loader_wr <= '1;
+	else loader_wr <= loader_wr << 1;
+end
+
+////////////////////  MAIN  //////////////////////
 wire [7:0] R,G,B;
 wire HBlank,VBlank;
 wire VSync, HSync;
@@ -283,7 +299,11 @@ tsconf tsconf
 
 	.PS2_KEY(ps2_key),
 	.PS2_MOUSE(ps2_mouse),
-	.joystick(joy_0[5:0] | joy_1[5:0])
+	.joystick(joy_0[5:0] | joy_1[5:0]),
+
+	.loader_addr(ioctl_addr[15:0]),
+	.loader_data(ioctl_dout),
+	.loader_wr(loader_wr[2])
 );
 
 assign DDRAM_CLK = clk_mem;
@@ -308,7 +328,6 @@ end
 ddram ddram
 (
 	.*,
-
 	.addr(gs_mem_addr),
 	.dout(gs_mem_dout),
 	.din(gs_mem_din),
@@ -344,7 +363,6 @@ video_mixer video_mixer
 
 
 //////////////////   SD   ///////////////////
-
 wire sdclk;
 wire sdmosi;
 wire sdmiso = vsd_sel ? vsdmiso : SD_MISO;

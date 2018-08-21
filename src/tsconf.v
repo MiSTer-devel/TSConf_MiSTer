@@ -53,11 +53,12 @@
 	POSSIBILITY OF SUCH DAMAGE.
 */
 
-module tsconf(
+module tsconf
+(
    // Clocks
    input         clk_84mhz,
    input         clk_28mhz,
-   
+
    // SDRAM (32MB 16x16bit)
    inout  [15:0] SDRAM_DQ,
    output [12:0] SDRAM_A,
@@ -69,7 +70,7 @@ module tsconf(
    output        SDRAM_RAS_N,
    output        SDRAM_CKE,
    output        SDRAM_CS_N,
-   
+
    // VGA
    output  [7:0] VGA_R,
    output  [7:0] VGA_G,
@@ -79,13 +80,13 @@ module tsconf(
    output        VGA_HBLANK,
    output        VGA_VBLANK,
    output        VGA_CEPIX,
-   
+
    // SD/MMC Memory Card
    input         SD_SO,
    output        SD_SI,
    output        SD_CLK,
    output        SD_CS_N,
-   
+
    // General Sound
    output [20:0] GS_ADDR,
    output  [7:0] GS_DI,
@@ -93,22 +94,26 @@ module tsconf(
    output        GS_RD,
    output        GS_WR,
    input         GS_WAIT,
-   
+
    // Audio
    output [15:0] SOUND_L,
    output [15:0] SOUND_R,
-   
+
    // External I/O
    input         COLD_RESET,
    input         WARM_RESET,
    output        RESET_OUT,
    input  [64:0] RTC,
    input  [31:0] CMOSCfg,
-   
+
    // PS/2 Keyboard
    input  [10:0] PS2_KEY,
    input  [24:0] PS2_MOUSE,
-   input   [5:0] joystick
+   input   [5:0] joystick,
+
+	input  [15:0] loader_addr,
+	input   [7:0] loader_data,
+	input         loader_wr
 );
 
 
@@ -701,7 +706,11 @@ dpram #(.ADDRWIDTH(16), .MEM_INIT_FILE("tsbios.mif")) BIOS
 (
 	.clock(clk_28mhz),
 	.address_a({cpu_addr_20[14:0],cpu_wrbsel}),
-	.q_a(bios_do_bus)
+	.q_a(bios_do_bus),
+	
+	.address_b(loader_addr),
+	.data_b(loader_data),
+	.wren_b(loader_wr)
 );
 
 // SDRAM Controller
