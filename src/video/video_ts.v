@@ -13,22 +13,23 @@
 //  6:0     word within line - 128 words = 512 pixels
 
 
-module video_ts (
+module video_ts
+(
 
-// clocks
+	// clocks
 	input wire clk,
 
-// video controls
+	// video controls
 	input wire start,
 	input wire [8:0] line,      // 	= vcount - vpix_beg + 9'b1;
 	input wire v_ts,
 	input wire v_pf,			// vertical tilemap prefetch window
 
-// video config
+	// video config
 	input wire [7:0] tsconf,
-    input wire [7:0] t0gpage,
-    input wire [7:0] t1gpage,
-    input wire [7:0] sgpage,
+	input wire [7:0] t0gpage,
+	input wire [7:0] t1gpage,
+	input wire [7:0] sgpage,
 	input wire [7:0] tmpage,
 	input wire [5:0] num_tiles,
 	input wire [8:0] t0x_offs,
@@ -38,23 +39,23 @@ module video_ts (
 	input wire [1:0] t0_palsel,
 	input wire [1:0] t1_palsel,
 
-// SFYS interface
+	// SFYS interface
 	input  wire  [7:0] sfile_addr_in,
 	input  wire [15:0] sfile_data_in,
 	input  wire sfile_we,
 
-// renderer interface
+	// renderer interface
 	output wire tsr_go,
 	output wire [5:0] tsr_addr,     // graphics address within the line
-    output wire [8:0] tsr_line,     // bitmap line
-    output wire [7:0] tsr_page,     // bitmap 1st page
-    output wire [8:0] tsr_x,        // addr in buffer (0-359 visibles)
-    output wire [2:0] tsr_xs,       // size (8-64 pix)
-    output wire tsr_xf,             // X flip
-    output wire [3:0] tsr_pal,		// palette
+	output wire [8:0] tsr_line,     // bitmap line
+	output wire [7:0] tsr_page,     // bitmap 1st page
+	output wire [8:0] tsr_x,        // addr in buffer (0-359 visibles)
+	output wire [2:0] tsr_xs,       // size (8-64 pix)
+	output wire tsr_xf,             // X flip
+	output wire [3:0] tsr_pal,		// palette
 	input wire tsr_rdy,              // renderer is done and ready to receive a new task
 
-// DRAM interface
+	// DRAM interface
 	output wire [20:0] dram_addr,
 	output wire        dram_req,
 	input  wire        dram_next,
@@ -374,30 +375,28 @@ module video_ts (
 
 
 // SFile
-	wire [15:0] sfile_rdata;
-
-video_sfile video_sfile (
-	.clock	    (!clk),	// MVV 18.10.2014
-	.wraddress	(sfile_addr_in),
-	.data		(sfile_data_in),
-	.wren		(sfile_we),
-	.rdaddress	(sreg),
-	.q			(sfile_rdata)
+wire [15:0] sfile_rdata;
+dpram #(.DATAWIDTH(16), .ADDRWIDTH(8)) video_sfile
+(
+	.clock	   (clk),
+	.address_a	(sfile_addr_in),
+	.data_a		(sfile_data_in),
+	.wren_a		(sfile_we),
+	.address_b	(sreg),
+	.q_b			(sfile_rdata)
 );
-
 
 // 4 buffers * 2 tile-planes * 64 tiles * 16 bits (9x16) - used to prefetch tiles
 // (2 altdprams)
-	wire [15:0] tmb_rdata;
-
-    video_tmbuf video_tmbuf (
-        .clock      (!clk),	// MVV 18.10.2014
-        .data       (dram_rdata),
-        // .data       (0),
-        .wraddress  (tmb_waddr),
-        .wren       (tm_next),
-        .rdaddress  (tmb_raddr),
-        .q          (tmb_rdata)
+wire [15:0] tmb_rdata;
+dpram #(.DATAWIDTH(16), .ADDRWIDTH(9))  video_tmbuf
+(
+	.clock      (clk),
+	.address_a  (tmb_waddr),
+	.data_a     (dram_rdata),
+	.wren_a     (tm_next),
+	.address_b  (tmb_raddr),
+	.q_b        (tmb_rdata)
 );
-
+ 
 endmodule

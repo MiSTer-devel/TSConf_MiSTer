@@ -367,8 +367,6 @@ set_global_assignment -name VERILOG_FILE src/cpu/zmem.v
 set_global_assignment -name VERILOG_FILE src/cpu/zmaps.v
 set_global_assignment -name VERILOG_FILE src/cpu/zint.v
 set_global_assignment -name VERILOG_FILE src/cpu/zclock.v
-set_global_assignment -name VERILOG_FILE src/cpu/cache_data.v
-set_global_assignment -name VERILOG_FILE src/cpu/cache_addr.v
 set_global_assignment -name VHDL_FILE src/rtc/CMOS.vhd
 set_global_assignment -name VHDL_FILE src/rtc/mc146818a.vhd
 set_global_assignment -name VHDL_FILE src/sound/soundrive.vhd
@@ -389,12 +387,6 @@ set_global_assignment -name VERILOG_FILE src/video/video_ports.v
 set_global_assignment -name VERILOG_FILE src/video/video_out.v
 set_global_assignment -name VERILOG_FILE src/video/video_mode.v
 set_global_assignment -name VERILOG_FILE src/video/video_fetch.v
-set_global_assignment -name VERILOG_FILE src/video/mem/video_vmem.v
-set_global_assignment -name VERILOG_FILE src/video/mem/video_tsline1.v
-set_global_assignment -name VERILOG_FILE src/video/mem/video_tsline0.v
-set_global_assignment -name VERILOG_FILE src/video/mem/video_tmbuf.v
-set_global_assignment -name VERILOG_FILE src/video/mem/video_sfile.v
-set_global_assignment -name VERILOG_FILE src/video/mem/video_cram.v
 set_global_assignment -name VERILOG_FILE src/video/video_top.v
 set_global_assignment -name VHDL_FILE src/keyboard.vhd
 set_global_assignment -name VERILOG_FILE src/kempston_mouse.v

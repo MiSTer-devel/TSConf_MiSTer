@@ -277,24 +277,26 @@ module zmem(
 	wire cache_v;          //data valid
 	wire [1:0] cache_tmp;  //empty 16bit: 2 cache_tmp + csvrom + 13cpu_hi_addr1
 	
-	cache_data cache_data (
+	dpram #(.DATAWIDTH(16), .ADDRWIDTH(9)) cache_data
+	(
 		 .clock (clk),     // -- CLK
-		 .rdaddress ({csvrom1, ch_addr1}), // ADDR for RD 
-		 .wraddress (loader ? za[8:0] : cpu_strobe ? {csvrom2, ch_addr2} : {csvrom1, ch_addr1}),//WR
+		 .address_b ({csvrom1, ch_addr1}), // ADDR for RD 
+		 .address_a (loader ? za[8:0] : cpu_strobe ? {csvrom2, ch_addr2} : {csvrom1, ch_addr1}),//WR
 		  //-----------------CACHE DATA -------------------------
-		 .wren (loader ? 1'b1  : cpu_strobe), //c2 -strobe
-		 .data (loader ? 16'b0 : cpu_rddata), //<=====
-		 .q (cache_d)        // ==> data from CACHE
+		 .wren_a (loader ? 1'b1  : cpu_strobe), //c2 -strobe
+		 .data_a (loader ? 16'b0 : cpu_rddata), //<=====
+		 .q_b (cache_d)        // ==> data from CACHE
 	);
 
-	cache_addr cache_addr (
+	dpram #(.DATAWIDTH(16), .ADDRWIDTH(9)) cache_addr
+	(
 		 .clock (clk),    //---- CLK
-		 .rdaddress ({csvrom1, ch_addr1}), //                      
-		 .wraddress (loader ? za[8:0] : cpu_strobe ? {csvrom2, ch_addr2} : {csvrom1, ch_addr1}), //WR
+		 .address_b ({csvrom1, ch_addr1}), //                      
+		 .address_a (loader ? za[8:0] : cpu_strobe ? {csvrom2, ch_addr2} : {csvrom1, ch_addr1}), //WR
 		 //--------------arbiter.cpu_strobe <= curr_cpu && cpu_rnw_r;
-		 .q ({cache_tmp, cache_v, cache_a}), // valid, addr from CACHE 
-		 .data (loader ? 16'b0 : cpu_strobe ? {cache_tmp, 1'b1, cpu_hi_addr2} : {2'b0, 1'b0, 8'b0}), //wrdata 
-		 .wren (loader ? 1'b1 : (cpu_strobe || cache_inv))  //c2 -strobe
+		 .q_b ({cache_tmp, cache_v, cache_a}), // valid, addr from CACHE 
+		 .data_a (loader ? 16'b0 : cpu_strobe ? {cache_tmp, 1'b1, cpu_hi_addr2} : {2'b0, 1'b0, 8'b0}), //wrdata 
+		 .wren_a (loader ? 1'b1 : (cpu_strobe || cache_inv))  //c2 -strobe
 	);	
 	//-----------		
 	wire cache_hit = (cpu_hi_addr1 == cache_a) && cache_v;
@@ -307,6 +309,4 @@ module zmem(
 	wire cache_hit_en = (cache_hit && (cache_en[win] || csvrom)) ;
 	wire cache_inv = ramwr_s && cache_hit;	   // cache invalidation should be only performed if write happens to cached address
 	
-	
-
 endmodule

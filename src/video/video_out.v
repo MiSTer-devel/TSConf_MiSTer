@@ -34,42 +34,43 @@ module video_out (
 	output wire [3:0] tst
 );
 
-	assign tst[0] = clk;     ////phase[0];
-	assign tst[1] = cram_we;  //phase[1];
-	assign tst[2] = cram_addr_in[0]; //
-	assign tst[3] = cram_data_in[0]; //pwm[3][{phase, 1'b0}];  //!pwm[igrn][{phase, 1'b1}];
+assign tst[0] = clk;     ////phase[0];
+assign tst[1] = cram_we;  //phase[1];
+assign tst[2] = cram_addr_in[0]; //
+assign tst[3] = cram_data_in[0]; //pwm[3][{phase, 1'b0}];  //!pwm[igrn][{phase, 1'b1}];
 
-   
-	// TV/VGA mux
-	reg [7:0] vplex;
-	always @(posedge clk) if (c3)	vplex <= vplex_in;
 
-	wire [7:0] plex = vga_on ? vgaplex : vplex;
-	wire plex_sel = vga_on ? plex_sel_in[0] : plex_sel_in[1];
-	wire hires = vga_on ? vga_hires : tv_hires;
-	wire [7:0] vdata = hires ? {palsel, plex_sel ? plex[3:0] : plex[7:4]} : plex;
+// TV/VGA mux
+reg [7:0] vplex;
+always @(posedge clk) if (c3)	vplex <= vplex_in;
 
-	// CRAM =====================================================================
-	wire [14:0] vpixel;
+wire [7:0] plex = vga_on ? vgaplex : vplex;
+wire plex_sel = vga_on ? plex_sel_in[0] : plex_sel_in[1];
+wire hires = vga_on ? vga_hires : tv_hires;
+wire [7:0] vdata = hires ? {palsel, plex_sel ? plex[3:0] : plex[7:4]} : plex;
 
-	video_cram video_cram(
-		.clock    (clk),
-		.wraddress(cram_addr_in),
-		.data     (cram_data_in),
-		.wren     (cram_we),
-		.rdaddress(vdata), //-<INPUT
-		.q		    (vpixel)
-	);
+// CRAM =====================================================================
+wire [14:0] vpixel;
 
-	//=============VPIXEL=================================
+dpram #(.DATAWIDTH(15), .ADDRWIDTH(8), .MEM_INIT_FILE("src/video/video_cram.mif")) video_cram
+(
+	.clock    (clk),
+	.address_a(cram_addr_in),
+	.data_a   (cram_data_in),
+	.wren_a   (cram_we),
+	.address_b(vdata), //-<INPUT
+	.q_b	    (vpixel)
+);
 
-	reg blank;
-	always @(posedge clk) blank <= vga_on ? vga_blank : tv_blank;
+//=============VPIXEL=================================
 
-	wire [14:0] vpix = blank ? 15'b0 : vpixel; //OK for Spectrum mode // 5 bits for every color 
+reg blank;
+always @(posedge clk) blank <= vga_on ? vga_blank : tv_blank;
 
-	assign vred = {vpix[14:10], vpix[14:12]};
-	assign vgrn = {vpix[ 9: 5], vpix[ 9: 7]};
-	assign vblu = {vpix[ 4: 0], vpix[ 4: 2]};
+wire [14:0] vpix = blank ? 15'b0 : vpixel; //OK for Spectrum mode // 5 bits for every color 
+
+assign vred = {vpix[14:10], vpix[14:12]};
+assign vgrn = {vpix[ 9: 5], vpix[ 9: 7]};
+assign vblu = {vpix[ 4: 0], vpix[ 4: 2]};
 
 endmodule
