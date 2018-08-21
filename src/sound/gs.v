@@ -103,15 +103,12 @@ wire        cpu_wr_n;
 wire [15:0] cpu_a_bus;
 wire  [7:0] cpu_do_bus;
 
-T80s cpu
+T80pa cpu
 (
 	.RESET_n(~RESET),
-	.CLK_n(CLK),
-	.CEN(CE & ~MEM_WAIT),
-	.WAIT_n(1),
+	.CLK(CLK),
+	.CEN_p(CE & ~MEM_WAIT),
 	.INT_n(int_n),
-	.NMI_n(1),
-	.BUSRQ_n(1),
 	.M1_n(cpu_m1_n),
 	.MREQ_n(cpu_mreq_n),
 	.IORQ_n(cpu_iorq_n),

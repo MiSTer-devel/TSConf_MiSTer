@@ -119,7 +119,7 @@ localparam CONF_STR = {
 	"O8,CPU Cache,On,Off;",
 	"O9A,#7FFD span,128K,128K Auto,1024K,512K;",
 	"OLN,ZX Palette,Default,B.black,Light,Pale,Dark,Grayscale,Custom;",
-	"OPR,INT Offset,2,3,4,5,6,7,0,1;",
+	"OPR,INT Offset,3,4,5,6,7,0,1,2;",
 	"-;",
 	"OBD,F11 Reset,boot.$C,sys.rom,ROM;",
 	"OEF,           bank,TR-DOS,Basic 48,Basic 128,SYS;",
@@ -144,7 +144,7 @@ assign CMOSCfg[18:16]= (status[18:16]) ? status[18:16] + 3'd2 : 3'd0;
 assign CMOSCfg[20:19]= status[20:19] + 2'd2;
 assign CMOSCfg[23:21]= status[23:21];
 assign CMOSCfg[24]   = 0;
-assign CMOSCfg[27:25]= status[27:25] + 3'd2;
+assign CMOSCfg[27:25]= status[27:25] + 3'd3;
 
 
 ////////////////////   CLOCKS   ///////////////////

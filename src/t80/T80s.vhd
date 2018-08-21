@@ -79,11 +79,11 @@ entity T80s is
 	port(
 		RESET_n		: in std_logic;
 		CLK_n			: in std_logic;
-		CEN			: in std_logic;
-		WAIT_n		: in std_logic;
-		INT_n			: in std_logic;
-		NMI_n			: in std_logic;
-		BUSRQ_n		: in std_logic;
+		CEN			: in std_logic := '1';
+		WAIT_n		: in std_logic := '1';
+		INT_n			: in std_logic := '1';
+		NMI_n			: in std_logic := '1';
+		BUSRQ_n		: in std_logic := '1';
 		M1_n			: out std_logic;
 		MREQ_n		: out std_logic;
 		IORQ_n		: out std_logic;
@@ -135,14 +135,8 @@ begin
 			DO => DO,
 			MC => MCycle,
 			TS => TState,
-			IntCycle_n => IntCycle_n,
-			
-			SavePC => open,
-			SaveINT => open,
-			RestorePC => (others => '1'),
-			RestoreINT => (others => '1'),
-			
-			RestorePC_n => '1' );
+			IntCycle_n => IntCycle_n
+		);
 
 	process (RESET_n, CLK_n)
 	begin
@@ -152,7 +146,7 @@ begin
 			IORQ_n <= '1';
 			MREQ_n <= '1';
 			DI_Reg <= "00000000";
-		elsif CLK_n'event and CLK_n = '1' then
+		elsif rising_edge(CLK_n) then
 			if CEN = '1' then
 				RD_n <= '1';
 				WR_n <= '1';
@@ -193,5 +187,4 @@ begin
 			end if;
 		end if;
 	end process;
-
 end;

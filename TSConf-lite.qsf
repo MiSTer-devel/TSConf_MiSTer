@@ -355,12 +355,7 @@ set_global_assignment -name PRE_FLOW_SCRIPT_FILE "quartus_sh:sys/build_id.tcl"
 
 set_global_assignment -name CDF_FILE jtag.cdf
 set_global_assignment -name QIP_FILE sys/sys.qip
-set_global_assignment -name VHDL_FILE src/t80/T80_Reg.vhd
-set_global_assignment -name VHDL_FILE src/t80/T80_Pack.vhd
-set_global_assignment -name VHDL_FILE src/t80/T80_MCode.vhd
-set_global_assignment -name VHDL_FILE src/t80/T80_ALU.vhd
-set_global_assignment -name VHDL_FILE src/t80/T80.vhd
-set_global_assignment -name VHDL_FILE src/t80/T80s.vhd
+set_global_assignment -name QIP_FILE src/t80/T80.qip
 set_global_assignment -name VERILOG_FILE src/cpu/zsignals.v
 set_global_assignment -name VERILOG_FILE src/cpu/zports.v
 set_global_assignment -name VERILOG_FILE src/cpu/zmem.v

@@ -329,24 +329,20 @@ zclock TS02
 	.turbo(turbo)
 );
 
-T80s #(.mode(0), .t2write(1), .iowait(1)) z80_unit
+T80s CPU
 (
-	.reset_n((~reset)),
-	.clk_n(zclk),
-	.cen(1),
-	.wait_n(1),
-	.int_n(cpu_int_n_TS),
-	.nmi_n(1),
-	.busrq_n(1),
-	.m1_n(cpu_m1_n),
-	.mreq_n(cpu_mreq_n),
-	.iorq_n(cpu_iorq_n),
-	.rd_n(cpu_rd_n),
-	.wr_n(cpu_wr_n),
-	.rfsh_n(cpu_rfsh_n),
-	.a(cpu_a_bus),
-	.di(cpu_di_bus),
-	.do(cpu_do_bus)
+	.RESET_n(~reset),
+	.CLK_n(zclk),
+	.INT_n(cpu_int_n_TS),
+	.M1_n(cpu_m1_n),
+	.MREQ_n(cpu_mreq_n),
+	.IORQ_n(cpu_iorq_n),
+	.RD_n(cpu_rd_n),
+	.WR_n(cpu_wr_n),
+	.RFSH_n(cpu_rfsh_n),
+	.A(cpu_a_bus),
+	.DI(cpu_di_bus),
+	.DO(cpu_do_bus)
 );
 
 zsignals TS04
