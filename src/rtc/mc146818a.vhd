@@ -56,11 +56,11 @@ begin
 		-- 14 Bytes of Clock and Control Registers Read
 		case A(7 downto 0) is
 			when x"00" => Dout <= seconds_reg;
-			when x"01" => Dout <= seconds_alarm_reg;
+--			when x"01" => Dout <= seconds_alarm_reg;
 			when x"02" => Dout <= minutes_reg;
-			when x"03" => Dout <= minutes_alarm_reg;
+--			when x"03" => Dout <= minutes_alarm_reg;
 			when x"04" => Dout <= hours_reg;
-			when x"05" => Dout <= hours_alarm_reg;
+--			when x"05" => Dout <= hours_alarm_reg;
 			when x"06" => Dout <= weeks_reg;
 			when x"07" => Dout <= days_reg;
 			when x"08" => Dout <= month_reg;
@@ -147,11 +147,11 @@ begin
 					a_reg(7) <= '1';
 					c_reg(4) <= '1';
 					-- alarm
-					if ((seconds_reg = seconds_alarm_reg) and
-						(minutes_reg = minutes_alarm_reg) and
-						(hours_reg = hours_alarm_reg)) then
-						c_reg(5) <= '1';
-					end if;
+--					if ((seconds_reg = seconds_alarm_reg) and
+--						(minutes_reg = minutes_alarm_reg) and
+--						(hours_reg = hours_alarm_reg)) then
+--						c_reg(5) <= '1';
+--					end if;
 					-- DM binary-coded-decimal (BCD) data mode
 					--if b_reg(2) = '0' then
 						if seconds_reg(3 downto 0) /= "1001" then
