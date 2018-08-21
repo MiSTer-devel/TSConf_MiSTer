@@ -121,9 +121,9 @@ localparam CONF_STR = {
 	"OLN,ZX Palette,Default,B.black,Light,Pale,Dark,Grayscale,Custom;",
 	"OPR,INT Offset,2,3,4,5,6,7,0,1;",
 	"-;",
-	"OBD,F11 Reset,boot.$C,sys.rom,ROM #00,ROM #04,RAM #F8;",
+	"OBD,F11 Reset,boot.$C,sys.rom,ROM;",
 	"OEF,           bank,TR-DOS,Basic 48,Basic 128,SYS;",
-	"OGI,Shift+F11 Reset,ROM #00,ROM #04,RAM #F8,boot.$C,sys.rom;",
+	"OGI,Shift+F11 Reset,ROM,boot.$C,sys.rom;",
 	"OJK,           bank,Basic 128,SYS,TR-DOS,Basic 48;",
 	"-;",
 	"R0,Reset and apply settings;",
@@ -137,10 +137,10 @@ wire [27:0] CMOSCfg;
 assign CMOSCfg[5:0]  = 0;
 assign CMOSCfg[7:6]  = status[7:6];
 assign CMOSCfg[8]    = ~status[8];
-assign CMOSCfg[10:9] = status[10:9]  + 1'd1;
+assign CMOSCfg[10:9] = status[10:9] + 1'd1;
 assign CMOSCfg[13:11]= (status[13:11] < 2) ? status[13:11] + 3'd3 : status[13:11] - 3'd2;
 assign CMOSCfg[15:14]= status[15:14];
-assign CMOSCfg[18:16]= status[18:16];
+assign CMOSCfg[18:16]= (status[18:16]) ? status[18:16] + 3'd2 : 3'd0;
 assign CMOSCfg[20:19]= status[20:19] + 2'd2;
 assign CMOSCfg[23:21]= status[23:21];
 assign CMOSCfg[24]   = 0;
