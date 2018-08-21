@@ -113,7 +113,7 @@ localparam CONF_STR = {
 	"O12,Scandoubler Fx,None,HQ2x,CRT 25%,CRT 50%;",
 	"-;",
 	"O34,Stereo mix,None,25%,50%,100%;",
-	"OST,General Sound,512KB,1MB,2MB,4MB;",
+	"OST,General Sound,512KB,1MB,2MB;",
 	"-;",
 	"O67,CPU Speed,3.5MHz,7MHz,14MHz;",
 	"O8,CPU Cache,On,Off;",
@@ -288,7 +288,7 @@ tsconf tsconf
 
 assign DDRAM_CLK = clk_mem;
 
-wire [21:0] gs_mem_addr;
+wire [20:0] gs_mem_addr;
 wire  [7:0] gs_mem_dout;
 wire  [7:0] gs_mem_din;
 wire        gs_mem_rd;
@@ -299,10 +299,9 @@ reg   [7:0] gs_mem_mask;
 always_comb begin
 	gs_mem_mask = 0;
 	case(status[29:28])
-		0: if(gs_mem_addr[21:19]) gs_mem_mask = 8'hFF;
-		1: if(gs_mem_addr[21:20]) gs_mem_mask = 8'hFF;
-		2: if(gs_mem_addr[21]   ) gs_mem_mask = 8'hFF;
-		3:                        gs_mem_mask = 0;
+		0: if(gs_mem_addr[20:19]) gs_mem_mask = 8'hFF;
+		1: if(gs_mem_addr[20])    gs_mem_mask = 8'hFF;
+	 2,3:                        gs_mem_mask = 0;
 	endcase
 end
 

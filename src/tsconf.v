@@ -87,7 +87,7 @@ module tsconf(
    output        SD_CS_N,
    
    // General Sound
-   output [21:0] GS_ADDR,
+   output [20:0] GS_ADDR,
    output  [7:0] GS_DI,
    input   [7:0] GS_DO,
    output        GS_RD,
