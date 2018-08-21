@@ -94,7 +94,7 @@ ym2149 ym2149
 	.CE(ce_psg),
 	.RESET(RESET),
 	.BDIR(WE),
-	.BC(~A0),
+	.BC(~A0 | ~WE),
 	.DI(DI),
 	.DO(psg_dout),
 	.CHANNEL_A(CHANNEL_A),
