@@ -273,7 +273,6 @@ wire        tm_next;
 // DMA
 wire        dma_rnw;
 wire        dma_req;
-wire        dma_z80_lp;
 wire [15:0] dma_wrdata;
 wire [20:0] dma_addr;
 wire        dma_next;
@@ -286,7 +285,6 @@ wire [15:0] dma_data;
 wire [7:0]  dma_wraddr;
 wire        int_start_dma;
 // SPI
-wire        spi_stb;
 wire        spi_start;
 wire        dma_spi_req;
 wire [7:0]  dma_spi_din;
@@ -529,7 +527,6 @@ arbiter TS07
 	.dma_addr({3'b000, dma_addr}),
 	.dma_wrdata(dma_wrdata),
 	.dma_req(dma_req),
-	.dma_z80_lp(dma_z80_lp),
 	.dma_rnw(dma_rnw),
 	.dma_next(dma_next),
 	.ts_addr({3'b000, ts_addr}),
@@ -629,14 +626,12 @@ dma TS09
 	.dram_rddata(sdr_do_bus_16),
 	.dram_wrdata(dma_wrdata),
 	.dram_req(dma_req),
-	.dma_z80_lp(dma_z80_lp),
 	.dram_rnw(dma_rnw),
 	.dram_next(dma_next),
 	.spi_rddata(spi_dout),
 	.spi_wrdata(dma_spi_din),
 	.spi_req(dma_spi_req),
-	.spi_stb(spi_stb),
-	.spi_start(spi_start),
+	.spi_stb(spi_start),
 	.ide_in(0),
 	.ide_stb(0),
 	.cram_we(dma_cram_we),
@@ -666,14 +661,12 @@ spi TS11
 	.sck(SD_CLK),
 	.sdo(SD_SI),
 	.sdi(SD_SO),
-	.stb(spi_stb),
-	.start(spi_start),
 	.dma_req(dma_spi_req),
 	.dma_din(dma_spi_din),
 	.cpu_req(cpu_spi_req),
 	.cpu_din(cpu_spi_din),
-	.dout(spi_dout),
-	.speed(0)
+	.start(spi_start),
+	.dout(spi_dout)
 );
 
 zint TS13

@@ -89,7 +89,6 @@ module arbiter(
 	input wire [23:0] dma_addr,
 	input wire [15:0] dma_wrdata,
 	input wire        dma_req,
-	input wire        dma_z80_lp,
 	input wire        dma_rnw,
 	output wire       dma_next,
 
