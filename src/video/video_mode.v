@@ -171,12 +171,12 @@ wire [8:0] vp_beg[0:3];
 wire [8:0] vp_end[0:3];
 wire [5:0] x_tile[0:3];
 
-assign hp_beg[0] = 9'd140;	// 256 (88-52-256-52)
+assign hp_beg[0] = 9'd136;	// 256 (88-52-256-52)
 assign hp_beg[1] = 9'd108;	// 320 (88-20-320-20)
 assign hp_beg[2] = 9'd108;	// 320 (88-20-320-20)
 assign hp_beg[3] = 9'd88;	// 360 (88-0-360-0)
 
-assign hp_end[0] = 9'd396;	// 256
+assign hp_end[0] = 9'd392;	// 256
 assign hp_end[1] = 9'd428;	// 320
 assign hp_end[2] = 9'd428;	// 320
 assign hp_end[3] = 9'd448;	// 360
