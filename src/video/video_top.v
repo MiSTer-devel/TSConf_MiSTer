@@ -15,6 +15,7 @@ module video_top
 	output wire	[7:0] vred,
 	output wire	[7:0] vgrn,
 	output wire	[7:0] vblu,
+	output wire  vdac_mode,
 
 	// video syncs
 	output wire	hsync,
@@ -25,7 +26,6 @@ module video_top
 	output wire pix_stb,
 
 	// Z80 controls
-	input wire [15:0] a,
 	input wire [ 7:0] d,
 	input wire [15:0] zmd,
 	input wire [ 7:0] zma,
@@ -74,10 +74,8 @@ module video_top
 	input  wire        video_pre_next,
 	input  wire        next_video,
 	input  wire        video_strobe,
-	input  wire        video_next_strobe,
 	output wire [20:0] ts_addr,
 	output wire        ts_req,
-	output wire        ts_z80_lp,
 	input  wire        ts_pre_next,
 	input  wire        ts_next,
 	output wire [20:0] tm_addr,
@@ -87,13 +85,9 @@ module video_top
 	// video controls
 	input wire cfg_60hz,
 	input wire sync_pol,
-	input wire vga_on,
-
-	output wire [3:0] tst
+	input wire vga_on
 );
 
-
-assign ts_z80_lp = tsconf[4];
 
 // video config
 wire [7:0] vpage;      // re-latched at line_start
@@ -116,6 +110,10 @@ wire [8:0] hpix_beg;
 wire [8:0] hpix_end;
 wire [8:0] vpix_beg;
 wire [8:0] vpix_end;
+wire [8:0] hpix_beg_ts;
+wire [8:0] hpix_end_ts;
+wire [8:0] vpix_beg_ts;
+wire [8:0] vpix_end_ts;
 wire [5:0] x_tiles;
 wire [9:0] x_offs_mode;
 wire [4:0] go_offs;
@@ -123,12 +121,9 @@ wire [1:0] render_mode;
 wire tv_hires;
 wire vga_hires;
 wire v60hz;
-//===zx-evo-fpga-564db5e984ef ===
 wire nogfx  = vconf[5];
 wire notsu  = vconf[4];
 wire gfxovr = vconf[3];
-//wire gfxovr;
-//===============================
 wire tv_hblank;
 wire tv_vblank;
 wire vga_hblank;
@@ -142,6 +137,7 @@ wire [3:0] scnt;
 wire [8:0] lcount;
 
 // synchro
+wire frame_start;
 wire pix_start;
 wire tv_pix_start;
 wire vga_pix_start;
@@ -151,6 +147,7 @@ wire v_pf;
 wire hpix;
 wire vpix;
 wire hvpix;
+wire hvtspix;
 wire flash;
 
 // fetcher
@@ -177,9 +174,6 @@ wire [3:0] tsr_pal;
 wire tsr_rdy;
 
 // TS-line
-// wire [8:0] ts_waddr = a[8:0];
-// wire [7:0] ts_wdata = {d[7:1], 1'b1};
-// wire ts_we = c3;
 wire [8:0] ts_waddr;
 wire [7:0] ts_wdata;
 wire ts_we;
@@ -189,7 +183,8 @@ wire [8:0] ts_raddr;
 wire [9:0] vga_cnt_in;
 wire [9:0] vga_cnt_out;
 
-video_ports video_ports (
+video_ports video_ports
+(
 	.clk            (clk),
 	.d              (d),
 	.res            (res),
@@ -232,6 +227,7 @@ video_ports video_ports (
 	.palsel         (palsel),
 	.hint_beg       (hint_beg),
 	.vint_beg       (vint_beg),
+	.int_start      (0),
 	.tsconf         (tsconf),
 	.tmpage         (tmpage),
 	.t0gpage        (t0gpage),
@@ -240,7 +236,8 @@ video_ports video_ports (
 );
 
 
-video_mode video_mode (
+video_mode video_mode
+(
 	.clk		  		(clk),
 	.f1			   (f1),
 	.c3			   (c3),
@@ -254,10 +251,15 @@ video_mode video_mode (
 	.txt_char	   (fetch_temp[15:0]),
 	.gx_offs			(gx_offs),
 	.x_offs_mode	(x_offs_mode),
+	.ts_rres_ext   (tsconf[0]),
 	.hpix_beg	   (hpix_beg),
 	.hpix_end	   (hpix_end),
 	.vpix_beg	   (vpix_beg),
 	.vpix_end	   (vpix_end),
+	.hpix_beg_ts   (hpix_beg_ts),
+	.hpix_end_ts   (hpix_end_ts),
+	.vpix_beg_ts   (vpix_beg_ts),
+	.vpix_end_ts   (vpix_end_ts),
 	.x_tiles	    	(x_tiles),
 	.go_offs       (go_offs),
 	.cnt_col       (cnt_col),
@@ -274,7 +276,8 @@ video_mode video_mode (
 );
 
 
-video_sync video_sync (
+video_sync video_sync
+(
 	.clk           (clk),
 	.f1				(f1),
 	.c0				(c0),
@@ -284,6 +287,10 @@ video_sync video_sync (
 	.hpix_end		(hpix_end),
 	.vpix_beg		(vpix_beg),
 	.vpix_end		(vpix_end),
+	.hpix_beg_ts   (hpix_beg_ts),
+	.hpix_end_ts   (hpix_end_ts),
+	.vpix_beg_ts   (vpix_beg_ts),
+	.vpix_end_ts   (vpix_end_ts),
 	.go_offs       (go_offs),
 	.x_offs        (x_offs_mode[1:0]),
 	.y_offs_wr     (gy_offsl_wr || gy_offsh_wr),
@@ -311,12 +318,14 @@ video_sync video_sync (
 	.ts_start		(ts_start),
 	.cstart			(x_offs_mode[9:2]),
 	.rstart			(gy_offs),
+	.frame_start   (frame_start),
 	.int_start		(int_start),
 	.v_pf			   (v_pf),
 	.hpix			   (hpix),
 	.v_ts			   (v_ts),
 	.vpix			   (vpix),
 	.hvpix			(hvpix),
+	.hvtspix       (hvtspix),
 	.nogfx			(nogfx),
 	.cfg_60hz		(cfg_60hz),
 	.sync_pol		(sync_pol),
@@ -327,7 +336,8 @@ video_sync video_sync (
 );
 
 
-video_fetch video_fetch (
+video_fetch video_fetch
+(
 	.clk				(clk),
 	.f_sel			(fetch_sel),
 	.b_sel			(fetch_bsl),
@@ -338,7 +348,8 @@ video_fetch video_fetch (
 	.video_data		(dram_rdata)
 );
 
-video_ts video_ts (
+video_ts video_ts
+(
 	.clk		      (clk),
 	.start         (ts_start),
 	.line			   (lcount),
@@ -378,8 +389,8 @@ video_ts video_ts (
 	.sfile_we		(sfile_we)
 );
 
-
-video_ts_render video_ts_render (
+video_ts_render video_ts_render
+(
 	.clk		       (clk),
 
 	.reset          (ts_start),
@@ -406,10 +417,12 @@ video_ts_render video_ts_render (
 );
 
 
-video_render video_render (
+video_render video_render
+(
 	.clk		    	(clk),
 	.c1			   (c1),
 	.hvpix 	      (hvpix),
+	.hvtspix			(hvtspix),
 	.nogfx			(nogfx),
 	.notsu			(notsu),
 	.gfxovr			(gfxovr),
@@ -424,7 +437,8 @@ video_render video_render (
 	.vplex_out 	   (vplex)
 );
 
-video_out video_out (
+video_out video_out
+(
 	.clk				(clk),
 	.f0				(f0),
 	.c3				(c3),
@@ -436,14 +450,14 @@ video_out video_out (
 	.tv_hires		(tv_hires),
 	.vga_hires		(vga_hires),
 	.cram_addr_in	(zma),
-	.cram_data_in	(zmd[14:0]),
+	.cram_data_in  (zmd[15:0]),
 	.cram_we			(cram_we),
 	.vplex_in		(vplex),
 	.vgaplex			(vgaplex),
-	.vred				(vred),
-	.vgrn				(vgrn),
+	.vred   			(vred),
+	.vgrn     		(vgrn),
 	.vblu				(vblu),
-	.tst           (tst)
+	.vdac_mode     (vdac_mode)
 );
 
 assign hblank = vga_on ? vga_hblank : tv_hblank;
@@ -453,12 +467,12 @@ assign vblank = vga_on ? vga_vblank : tv_vblank;
 // (2 altdprams)
 wire tl_act0 = lcount[0];
 wire tl_act1 = ~lcount[0];
-wire [8:0] ts_waddr0 = tl_act0 ? ts_raddr : ts_waddr;
-wire [7:0] ts_wdata0 = tl_act0 ? 8'd0 : ts_wdata;
-wire       ts_we0    = tl_act0 ? c3 : ts_we;
-wire [8:0] ts_waddr1 = tl_act1 ? ts_raddr : ts_waddr;
-wire [7:0] ts_wdata1 = tl_act1 ? 8'd0 : ts_wdata;
-wire       ts_we1    = tl_act1 ? c3 : ts_we;
+wire [8:0] ts_waddr0 = tl_act0 ? ts_raddr  : ts_waddr;
+wire [7:0] ts_wdata0 = tl_act0 ? 8'd0      : ts_wdata;
+wire       ts_we0    = tl_act0 ? c3        : ts_we;
+wire [8:0] ts_waddr1 = tl_act1 ? ts_raddr  : ts_waddr;
+wire [7:0] ts_wdata1 = tl_act1 ? 8'd0      : ts_wdata;
+wire       ts_we1    = tl_act1 ? c3        : ts_we;
 wire [7:0] ts_rdata  = tl_act0 ? ts_rdata0 : ts_rdata1;
 wire [7:0] ts_rdata0, ts_rdata1;
 

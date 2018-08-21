@@ -96,7 +96,6 @@ module arbiter(
 // TS
 	input wire [23:0] ts_addr,
 	input wire 	      ts_req,
-	input wire 	      ts_z80_lp,
 	output wire       ts_pre_next,
 	output wire       ts_next,
 

@@ -256,12 +256,10 @@ wire        video_next;
 wire        video_pre_next;
 wire        next_video;
 wire        video_strobe;
-wire        video_next_strobe;
 
 // TS
 wire [20:0] ts_addr;
 wire        ts_req;
-wire        ts_z80_lp;
 
 // IN
 wire        ts_pre_next;
@@ -518,7 +516,6 @@ arbiter TS07
 	.video_pre_next(video_pre_next),
 	.video_next(video_next),		// (c2) at this signal video_addr may be changed; it is one clock leading the video_strobe
 	.video_strobe(video_strobe),		// (c3) one-cycle strobe meaning that video_data is available
-	.video_next_strobe(video_next_strobe),
 	.next_vid(next_video),		// used for TM prefetch
 	.cpu_addr({csvrom, 2'b00, cpu_addr_20}),
 	.cpu_wrdata(cpu_do_bus),
@@ -537,7 +534,6 @@ arbiter TS07
 	.dma_next(dma_next),
 	.ts_addr({3'b000, ts_addr}),
 	.ts_req(ts_req),
-	.ts_z80_lp(ts_z80_lp),
 	.ts_pre_next(ts_pre_next),
 	.ts_next(ts_next),
 	.tm_addr({3'b000, tm_addr}),
@@ -564,7 +560,6 @@ video_top TS08
 	.hblank(VGA_HBLANK),
 	.vblank(VGA_VBLANK),
 	.pix_stb(VGA_CEPIX),
-	.a(cpu_a_bus),
 	.d(cpu_do_bus),
 	.zmd(zmd),
 	.zma(zma),
@@ -607,10 +602,8 @@ video_top TS08
 	.video_pre_next(video_pre_next),
 	.next_video(next_video),
 	.video_strobe(video_strobe),
-	.video_next_strobe(video_next_strobe),
 	.ts_addr(ts_addr),
 	.ts_req(ts_req),
-	.ts_z80_lp(ts_z80_lp),
 	.ts_pre_next(ts_pre_next),
 	.ts_next(ts_next),
 	.tm_addr(tm_addr),
