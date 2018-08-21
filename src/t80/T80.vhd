@@ -118,6 +118,7 @@ entity T80 is
 		IntCycle_n : out std_logic;
 		IntE       : out std_logic;
 		Stop       : out std_logic;
+		out0       : in  std_logic := '0';  -- 0 => OUT(C),0, 1 => OUT(C),255
 		REG	     : out std_logic_vector(207 downto 0) -- IY, HL', DE', BC', IX, HL, DE, BC, PC, SP, R, I, F', A', F, A
 	);
 end T80;
@@ -971,7 +972,11 @@ begin
 			when "1101" =>
 				BusB <= std_logic_vector(PC(15 downto 8));
 			when "1110" =>
-				BusB <= "00000000";
+				if IR = x"71" and out0 = '1' then
+					BusB <= "11111111";
+				else
+					BusB <= "00000000";
+				end if;
 			when others =>
 				BusB <= "--------";
 			end case;

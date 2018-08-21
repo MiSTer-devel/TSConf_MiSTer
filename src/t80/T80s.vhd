@@ -92,6 +92,7 @@ entity T80s is
 		RFSH_n		: out std_logic;
 		HALT_n		: out std_logic;
 		BUSAK_n		: out std_logic;
+		OUT0        : in  std_logic := '0';  -- 0 => OUT(C),0, 1 => OUT(C),255
 		A				: out std_logic_vector(15 downto 0);
 		DI				: in std_logic_vector(7 downto 0);
 		DO				: out std_logic_vector(7 downto 0)
@@ -135,6 +136,7 @@ begin
 			DO => DO,
 			MC => MCycle,
 			TS => TState,
+			OUT0 => OUT0,
 			IntCycle_n => IntCycle_n
 		);
 

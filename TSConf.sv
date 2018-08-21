@@ -115,6 +115,7 @@ localparam CONF_STR = {
 	"O34,Stereo mix,None,25%,50%,100%;",
 	"OST,General Sound,512KB,1MB,2MB;",
 	"-;",
+	"OU,CPU Type,NMOS,CMOS;",
 	"O67,CPU Speed,3.5MHz,7MHz,14MHz;",
 	"O8,CPU Cache,On,Off;",
 	"O9A,#7FFD span,128K,128K Auto,1024K,512K;",
@@ -294,6 +295,7 @@ tsconf tsconf
 	.WARM_RESET(buttons[1]),
 	.RESET_OUT(reset),
 	.RTC(RTC),
+	.OUT0(status[30]),
 
 	.CMOSCfg(CMOSCfg),
 

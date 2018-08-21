@@ -55,61 +55,62 @@
 
 module tsconf
 (
-   // Clocks
-   input         clk_84mhz,
-   input         clk_28mhz,
+	// Clocks
+	input         clk_84mhz,
+	input         clk_28mhz,
 
-   // SDRAM (32MB 16x16bit)
-   inout  [15:0] SDRAM_DQ,
-   output [12:0] SDRAM_A,
-   output  [1:0] SDRAM_BA,
-   output        SDRAM_DQML,
-   output        SDRAM_DQMH,
-   output        SDRAM_WE_N,
-   output        SDRAM_CAS_N,
-   output        SDRAM_RAS_N,
-   output        SDRAM_CKE,
-   output        SDRAM_CS_N,
+	// SDRAM (32MB 16x16bit)
+	inout  [15:0] SDRAM_DQ,
+	output [12:0] SDRAM_A,
+	output  [1:0] SDRAM_BA,
+	output        SDRAM_DQML,
+	output        SDRAM_DQMH,
+	output        SDRAM_WE_N,
+	output        SDRAM_CAS_N,
+	output        SDRAM_RAS_N,
+	output        SDRAM_CKE,
+	output        SDRAM_CS_N,
 
-   // VGA
-   output  [7:0] VGA_R,
-   output  [7:0] VGA_G,
-   output  [7:0] VGA_B,
-   output        VGA_HS,
-   output        VGA_VS,
-   output        VGA_HBLANK,
-   output        VGA_VBLANK,
-   output        VGA_CEPIX,
+	// VGA
+	output  [7:0] VGA_R,
+	output  [7:0] VGA_G,
+	output  [7:0] VGA_B,
+	output        VGA_HS,
+	output        VGA_VS,
+	output        VGA_HBLANK,
+	output        VGA_VBLANK,
+	output        VGA_CEPIX,
 
-   // SD/MMC Memory Card
-   input         SD_SO,
-   output        SD_SI,
-   output        SD_CLK,
-   output        SD_CS_N,
+	// SD/MMC Memory Card
+	input         SD_SO,
+	output        SD_SI,
+	output        SD_CLK,
+	output        SD_CS_N,
 
-   // General Sound
-   output [20:0] GS_ADDR,
-   output  [7:0] GS_DI,
-   input   [7:0] GS_DO,
-   output        GS_RD,
-   output        GS_WR,
-   input         GS_WAIT,
+	// General Sound
+	output [20:0] GS_ADDR,
+	output  [7:0] GS_DI,
+	input   [7:0] GS_DO,
+	output        GS_RD,
+	output        GS_WR,
+	input         GS_WAIT,
 
-   // Audio
-   output [15:0] SOUND_L,
-   output [15:0] SOUND_R,
+	// Audio
+	output [15:0] SOUND_L,
+	output [15:0] SOUND_R,
 
-   // External I/O
-   input         COLD_RESET,
-   input         WARM_RESET,
-   output        RESET_OUT,
-   input  [64:0] RTC,
-   input  [31:0] CMOSCfg,
+	// Misc. I/O
+	input         COLD_RESET,
+	input         WARM_RESET,
+	output        RESET_OUT,
+	input  [64:0] RTC,
+	input  [31:0] CMOSCfg,
+	input         OUT0,
 
-   // PS/2 Keyboard
-   input  [10:0] PS2_KEY,
-   input  [24:0] PS2_MOUSE,
-   input   [5:0] joystick,
+	// PS/2 Keyboard
+	input  [10:0] PS2_KEY,
+	input  [24:0] PS2_MOUSE,
+	input   [5:0] joystick,
 
 	input  [15:0] loader_addr,
 	input   [7:0] loader_data,
@@ -340,6 +341,7 @@ T80s CPU
 	.RD_n(cpu_rd_n),
 	.WR_n(cpu_wr_n),
 	.RFSH_n(cpu_rfsh_n),
+	.OUT0(OUT0),
 	.A(cpu_a_bus),
 	.DI(cpu_di_bus),
 	.DO(cpu_do_bus)
