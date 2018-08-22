@@ -1,9 +1,8 @@
 
 // PentEvo project (c) NedoPC 2008-2010
 
-module zports(
-
-	input  wire        zclk,    // z80 clock
+module zports
+(
 	input  wire        clk,
 
 	input  wire [ 7:0] din,
@@ -31,55 +30,52 @@ module zports(
 	output wire        porthit,       // when internal port hit occurs, this is 1, else 0; used for iorq1_n iorq2_n on zxbus
 	output wire        external_port, // asserts for AY and VG93 accesses
 
-   output wire     zborder_wr  ,
-   output wire     border_wr   ,
-   output wire     zvpage_wr	,
-   output wire     vpage_wr	,
-   output wire     vconf_wr	,
-   output wire     gx_offsl_wr	,
-   output wire     gx_offsh_wr	,
-   output wire     gy_offsl_wr	,
-   output wire     gy_offsh_wr	,
-   output wire     t0x_offsl_wr,
-   output wire     t0x_offsh_wr,
-   output wire     t0y_offsl_wr,
-   output wire     t0y_offsh_wr,
-   output wire     t1x_offsl_wr,
-   output wire     t1x_offsh_wr,
-   output wire     t1y_offsl_wr,
-   output wire     t1y_offsh_wr,
-   output wire     tsconf_wr	,
-   output wire     palsel_wr	,
-   output wire     tmpage_wr	,
-   output wire     t0gpage_wr	,
-   output wire     t1gpage_wr	,
-   output wire     sgpage_wr	,
-   output wire     hint_beg_wr ,
-   output wire     vint_begl_wr,
-   output wire     vint_begh_wr,
+	output wire        zborder_wr,
+	output wire        border_wr,
+	output wire        zvpage_wr,
+	output wire        vpage_wr,
+	output wire        vconf_wr,
+	output wire        gx_offsl_wr,
+	output wire        gx_offsh_wr,
+	output wire        gy_offsl_wr,
+	output wire        gy_offsh_wr,
+	output wire        t0x_offsl_wr,
+	output wire        t0x_offsh_wr,
+	output wire        t0y_offsl_wr,
+	output wire        t0y_offsh_wr,
+	output wire        t1x_offsl_wr,
+	output wire        t1x_offsh_wr,
+	output wire        t1y_offsl_wr,
+	output wire        t1y_offsh_wr,
+	output wire        tsconf_wr,
+	output wire        palsel_wr,
+	output wire        tmpage_wr,
+	output wire        t0gpage_wr,
+	output wire        t1gpage_wr,
+	output wire        sgpage_wr,
+	output wire        hint_beg_wr,
+	output wire        vint_begl_wr,
+	output wire        vint_begh_wr,
 
 	output wire [31:0] xt_page,
 
-	output reg [4:0] fmaddr,
+	output reg   [4:0] fmaddr,
 	//----Conf-----------------
-	output reg [7:0] sysconf,
-	output reg [7:0] memconf,
-	output reg [3:0] cacheconf,
+	output reg   [7:0] sysconf,
+	output reg   [7:0] memconf,
+	output reg   [3:0] cacheconf,
 	//-------------------------
-	output reg [3:0] fddvirt,
-	
-	//output reg [2:0] im2v_frm,
-	//output reg [2:0] im2v_lin,
-	//output reg [2:0] im2v_dma,
-	output reg [7:0] intmask,
+	output reg   [3:0] fddvirt,
 
-	output wire [8:0] dmaport_wr,
-	input  wire       dma_act,
+	output reg   [7:0] intmask,
+
+	output wire  [8:0] dmaport_wr,
+	input  wire        dma_act,
 
 	input  wire        dos,
 	input  wire        vdos,
-	output  wire       vdos_on,
-	output  wire       vdos_off,
+	output wire        vdos_on,
+	output wire        vdos_off,
 
 	output wire        ay_bdir,
 	output wire        ay_bc1,
@@ -89,16 +85,6 @@ module zports(
 	input  wire [ 1:0] rstrom,
 	input  wire        tape_read,
 
-// IDE interface
-//	input  wire [15:0] ide_in,
-//	output wire [15:0] ide_out,
-//	output wire        ide_cs0_n,
-//	output wire        ide_cs1_n,
-//	output wire        ide_req,
-//	input  wire        ide_stb,
-//	input  wire        ide_ready,
-//	output reg		    ide_stall,
-
 	input  wire [ 4:0] keys_in, // keys (port FE)
 	input  wire [ 7:0] mus_in,  // mouse (xxDF)
 	input  wire [ 5:0] kj_in,
@@ -107,15 +93,15 @@ module zports(
 	input  wire        vg_drq,    // from vg93 module - drq + irq read
 	output wire        vg_cs_n,
 	output wire        vg_wrFF,
-   output reg  [1:0]  drive_sel, // disk drive selection
+	output reg   [1:0] drive_sel, // disk drive selection
 
-// SPI
+	// SPI
 	output reg         sdcs_n,
 	output wire        sd_start,
 	output wire [ 7:0] sd_datain,
 	input  wire [ 7:0] sd_dataout,
 
-// WAIT-ports related
+	// WAIT-ports related
 	output reg  [ 7:0] gluclock_addr,
 	output reg  [ 2:0] comport_addr,
 	output wire        wait_start_gluclock, // begin wait from some ports
@@ -125,10 +111,9 @@ module zports(
 	//---COM PORT------------------------
 	input  wire [ 7:0] com_data_rx,
 	input  wire [ 7:0] com_status,
-//------------------------------	
+	//------------------------------	
 	output wire [ 7:0] TST,
 	input  wire        lock_conf
-
 );
 
 	assign TST = 7'h00|sd_start;
@@ -223,13 +208,12 @@ module zports(
 	assign dataout = porthit & iord & (~external_port);
 
 
-// zclk-synchronous strobes
 	reg iowr_reg;
 	reg iord_reg;
 	reg port_wr;
 	reg port_rd;
 
-	always @(posedge zclk)
+	always @(posedge clk)
 	begin
 		iowr_reg <= iowr;
 		iord_reg <= iord;
@@ -577,17 +561,17 @@ module zports(
 // gluclock ports
 	wire gluclock_on = peff7[7] || dos;        // in dos mode EEF7 is not accessible, gluclock access is ON in dos mode.
 
-	always @(posedge zclk)
+	always @(posedge clk) begin
 		if (gluclock_on && portf7_wr) // gluclocks on
 			if( !a[13] ) // $DFF7 - addr reg
 				gluclock_addr <= din;
+	end
 
 
 
 				
 // write to wait registers
-	always @(posedge zclk)
-	begin
+	always @(posedge clk) begin
 		// gluclocks
 		if (gluclock_on && portf7_wr && !a[14]) // $BFF7 - data reg
 			wait_write <= din;
@@ -601,116 +585,15 @@ module zports(
 	wire comport_wr   = ((loa==COMPORT) && port_wr);
 	wire comport_rd   = ((loa==COMPORT) && port_rd);
 
-	always @(posedge zclk)
+	always @(posedge clk) begin
 		if (comport_wr || comport_rd)
 			comport_addr <= a[10:8];
+	end
 
 
 // wait from wait registers
 	// ACHTUNG!!!! here portxx_wr are ON Z80 CLOCK! logic must change when moving to clk strobes
 	assign wait_start_gluclock = (gluclock_on && !a[14] && (portf7_rd || portf7_wr)); // $BFF7 - gluclock r/w
 	assign wait_start_comport = (comport_rd || comport_wr);
-
-// IDE ports
-    // do NOT generate IDE write, if neither of ide_wrhi|lo latches set and writing to NIDE10
-//	wire ide_cs0 = ide_even && !ide_portc8;
-//	wire ide_cs1 = ide_portc8;
-//	wire ide_rd = rd && !(ide_rd_latch && ide_port10);
-//	wire ide_wr = wr && !(!ide_wrlo_latch && !ide_wrhi_latch && ide_port10);
-//	assign ide_req = iorq_s && ide_even && (ide_rd || ide_wr);
-//	assign ide_cs0_n = !ide_cs0;
-//	assign ide_cs1_n = !ide_cs1;
-
-	
-//	always @(posedge clk)
-//		if (ide_req)
-//			ide_stall <= 1'b1;
-//		else if (ide_ready)
-//			ide_stall <= 1'b0;
-	
-	
-	// control read & write triggers, which allow nemo-divide mod to work.
-	// read trigger:
-//	reg ide_rd_trig;  // nemo-divide read trigger
-//	always @(posedge zclk)
-//	begin
-//		if (ide_port10 && port_rd && !ide_rd_trig)
-//			ide_rd_trig <= 1'b1;
-//		else if (ide_all && (port_rd || port_wr))
-//			ide_rd_trig <= 1'b0;
-//	end
-
-
-    // two triggers for write sequence
-//	reg ide_wrlo_trig,  ide_wrhi_trig;  // nemo-divide write triggers
-//	always @(posedge zclk)
-//	if (ide_all && (port_rd || port_wr))
-//	begin
-//		if (ide_port11 && port_wr)
-//			ide_wrhi_trig <= 1'b1;
-//		else
-//			ide_wrhi_trig <= 1'b0;
-//
-//		if (ide_port10 && port_wr && !ide_wrhi_trig && !ide_wrlo_trig)
-//			ide_wrlo_trig <= 1'b1;
-//		else
-//			ide_wrlo_trig <= 1'b0;
-//	end
-
-
-	// normal read: #10(low), #11(high)
-	// divide read: #10(low), #10(high)
-	//
-	// normal write: #11(high), #10(low)
-	// divide write: #10(low),  #10(high)
-
-//	reg  [15:0] idewrreg; // write register, either low or high part is pre-written here,
-	                      // while other part is out directly from Z80 bus
-//	always @(posedge zclk)
-//	begin
-//		if (port_wr && ide_port11)
-//			idewrreg[15:8] <= din;
-
-//		if (port_wr && ide_port10 && !ide_wrlo_trig)
-//			idewrreg[ 7:0] <= din;
-//	end
-
-
-	// generate read cycles for IDE as usual, except for reading #10
-	// instead of #11 for high byte (nemo-divide). I use additional latch
-	// since 'ide_rd_trig' clears during second Z80 IO read cycle to #10
-//	reg ide_rd_latch; // to save state of trigger during read cycle
-//	always @*
-//       if (!rd)
-//           ide_rd_latch <= ide_rd_trig;
-
-//	reg ide_wrlo_latch, ide_wrhi_latch; // save state during write cycles
-//	always @*
-//        if (!wr)
-//        begin
-//            ide_wrlo_latch <= ide_wrlo_trig; // same for write triggers
-//            ide_wrhi_latch <= ide_wrhi_trig;
-//        end
-
-
-	// data read by Z80 from IDE
-//	wire idein_lo_rd  = port_rd && ide_port10 && (!ide_rd_trig);                      // while high part is remembered here
-//	wire [7:0] iderdodd = iderdreg[15:8];                                               // read data from "odd" port (#11)
-//	wire [7:0] iderdeven = (ide_rd_latch && ide_port10) ? iderdreg[15:8] : iderdreg[7:0];  // to control read data from "even" ide ports (all except #11)
-	// wire [7:0] iderdeven = (ide_rd_latch && ide_port10) ? idehiin[7:0] : ide_in[7:0];  // to control read data from "even" ide ports (all except #11)
-
-//	reg [15:0] iderdreg;
-	// reg [7:0] idehiin;                  // IDE high part read register: low part is read directly to Z80 bus,
-//	always @(posedge clk)
-//       if (ide_stb)
-//			iderdreg <= ide_in;
-        // if (idein_lo_rd)
-			// idehiin <= ide_in[15:8];
-
-
-	// data written to IDE from Z80
-//	wire [7:0] ideout1 = ide_wrhi_latch ? idewrreg[15:8] : din[ 7:0];
-//	wire [7:0] ideout0 = ide_wrlo_latch ? idewrreg[ 7:0] : din[ 7:0];
-//   assign ide_out = {ideout1, ideout0};
 
 endmodule

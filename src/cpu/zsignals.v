@@ -1,13 +1,12 @@
 
 // Decoding and strobing of z80 signals
 
-module zsignals(
-
-// clocks
+module zsignals
+(
+	// clocks
 	input wire clk,
-	input wire zpos,
 
-// z80 interface input
+	// z80 interface input
 	input wire iorq_n,
 	input wire mreq_n,
 	input wire m1_n,
@@ -15,7 +14,7 @@ module zsignals(
 	input wire rd_n,
 	input wire wr_n,
 
-// Z80 signals
+	// Z80 signals
 	output wire m1,
 	output wire rfsh,
 	output wire rd,
@@ -32,7 +31,7 @@ module zsignals(
 	output wire opfetch,
 	output wire intack,
 
-// Z80 signals strobes, at fclk
+	// Z80 signals strobes, at fclk
 	output wire iorq_s,
 	output wire mreq_s,
 	output wire iord_s,
@@ -45,50 +44,42 @@ module zsignals(
 );
 
 // invertors
-    assign m1 = !m1_n;
-    assign rfsh = !rfsh_n;
-    assign rd = !rd_n;
-    assign wr = !wr_n;
+assign m1 = !m1_n;
+assign rfsh = !rfsh_n;
+assign rd = !rd_n;
+assign wr = !wr_n;
 
 // requests
-    assign iorq = !iorq_n && m1_n;       // this is masked by ~M1 to avoid port decoding on INT ack
-    assign mreq = !mreq_n && rfsh_n;     // this is masked by ~RFSH to ignore refresh cycles as memory requests
+assign iorq = !iorq_n && m1_n;       // this is masked by ~M1 to avoid port decoding on INT ack
+assign mreq = !mreq_n && rfsh_n;     // this is masked by ~RFSH to ignore refresh cycles as memory requests
 
 // combined
-    assign rdwr = rd || wr;
-    assign iord = iorq && rd;
-    assign iowr = iorq && wr;
-    assign iorw = iorq && rdwr;
-    assign memrd = mreq && rd;
-    assign memwr = mreq && !rd;
-    assign memrw = mreq && rdwr;
-    assign opfetch = memrd && m1;
-    assign intack = !iorq_n && m1;		// NOT masked by M1
+assign rdwr = rd || wr;
+assign iord = iorq && rd;
+assign iowr = iorq && wr;
+assign iorw = iorq && rdwr;
+assign memrd = mreq && rd;
+assign memwr = mreq && !rd;
+assign memrw = mreq && rdwr;
+assign opfetch = memrd && m1;
+assign intack = !iorq_n && m1;		// NOT masked by M1
 
 // strobed
-	assign iorq_s = iorq_r[0] && !iorq_r[1];
-	assign mreq_s = mreq_r[0] && !mreq_r[1];
-	assign iord_s = iorq_s && rd;
-   assign iowr_s = iorq_s && wr;
-   assign iorw_s = iorq_s && rdwr;
-   assign memrd_s = mreq_s && rd;
-   assign memwr_s = mreq_s && !rd;
-   assign memrw_s = mreq_s && rdwr;
-   assign opfetch_s = memrd_s && m1;
+assign iorq_s = iorq_r[0] && !iorq_r[1];
+assign mreq_s = mreq_r[0] && !mreq_r[1];
+assign iord_s = iorq_s && rd;
+assign iowr_s = iorq_s && wr;
+assign iorw_s = iorq_s && rdwr;
+assign memrd_s = mreq_s && rd;
+assign memwr_s = mreq_s && !rd;
+assign memrw_s = mreq_s && rdwr;
+assign opfetch_s = memrd_s && m1;
 
 // latch inputs on FPGA clock
-	reg [1:0] iorq_r, mreq_r;
-	always @(posedge clk) if (zpos)
-	begin
-		iorq_r[0] <= iorq;
-		mreq_r[0] <= mreq;
-	end
-		
-	always @(posedge clk)
-	begin
-		iorq_r[1] <= iorq_r[0];
-		mreq_r[1] <= mreq_r[0];
-	end
-
+reg [1:0] iorq_r, mreq_r;
+always @(posedge clk) begin
+	iorq_r <= {iorq_r[0], iorq};
+	mreq_r <= {mreq_r[0], mreq};
+end
 
 endmodule

@@ -162,18 +162,6 @@ wire        dos;
 
 wire [7:0]  gluclock_addr;
 
-// clock
-wire        f0;
-wire        f1;
-wire        h0;
-wire        h1;
-wire        c0;
-wire        c1;
-wire        c2;
-wire        c3;
-wire        zclk;
-wire        zpos;
-wire        zneg;
 wire        vdos;
 wire        pre_vdos;
 wire        vdos_off;
@@ -295,6 +283,11 @@ wire [7:0]  spi_dout;
 wire [7:0]  mouse_do;
 
    
+// clock
+wire f0,f1;
+wire h0,h1;
+wire c0,c1,c2,c3;
+
 clock TS01
 (
 	.clk(clk_28mhz),
@@ -308,15 +301,17 @@ clock TS01
 	.c3(c3)
 );
 
+wire zclk;
+wire zpos;
 zclock TS02
 (
 	.clk(clk_28mhz),
-	.c1(c1),
-	.c3(c3),
-	.c14Mhz(c1),
+	.c0(c0),
+	.c2(c2),
+	.f0(f0),
+	.f1(f1),
 	.zclk_out(zclk),
 	.zpos(zpos),
-	.zneg(zneg),
 	.iorq_s(iorq_s),
 	.dos_on(dos_change),
 	.vdos_off(vdos_off),
@@ -329,7 +324,8 @@ zclock TS02
 T80s CPU
 (
 	.RESET_n(~reset),
-	.CLK_n(zclk),
+	.CLK_n(zclk), //clk_28mhz),
+	//.CEN(zpos),
 	.INT_n(cpu_int_n_TS),
 	.M1_n(cpu_m1_n),
 	.MREQ_n(cpu_mreq_n),
@@ -346,7 +342,6 @@ T80s CPU
 zsignals TS04
 (
 	.clk(clk_28mhz),
-	.zpos(zpos),
 	.iorq_n(cpu_iorq_n),
 	.mreq_n(cpu_mreq_n),
 	.m1_n(cpu_m1_n),
@@ -375,7 +370,6 @@ zsignals TS04
 
 zports TS05
 (
-	.zclk(zclk),
 	.clk(clk_28mhz),
 	.din(cpu_do_bus),
 	.dout(dout_ports),
@@ -460,7 +454,6 @@ zmem TS06
 	.c1(c1),
 	.c2(c2),
 	.c3(c3),
-	.zneg(zneg),
 	.zpos(zpos),
 	.rst(reset),		// PLL locked
 	.za(cpu_a_bus),		// from CPU
@@ -672,7 +665,7 @@ spi TS11
 zint TS13
 (
 	.clk(clk_28mhz),
-	.zclk(zclk),
+	.zpos(zpos),
 	.res(reset),
 	.int_start_frm(int_start_frm),		//< N1 VIDEO
 	.int_start_lin(int_start_lin),		//< N2 VIDEO
@@ -808,15 +801,12 @@ soundrive SE10
 );
 
 // Turbosound FM
-reg ce_ym, ce_cpu;
+reg ce_ym;
 always @(posedge clk_28mhz) begin
 	reg [1:0] div;
 	
 	div <= div + 1'd1;
 	ce_ym <= !div;
-	
-	ce_cpu <= zclk;
-	if(ce_cpu) ce_cpu <= 0;
 end
 
 wire ts_enable = ~cpu_iorq_n & cpu_a_bus[0] & cpu_a_bus[15] & ~cpu_a_bus[1];
@@ -830,7 +820,7 @@ turbosound SE12
 	.RESET(reset),
 
 	.CLK(clk_28mhz),
-	.CE_CPU(ce_cpu),
+	.CE_CPU(zpos),
 	.CE_YM(ce_ym),
 	.BDIR(ts_we),
 	.BC(cpu_a_bus[14]),

@@ -3,14 +3,13 @@
 //
 
 
-module zmem(
-
+module zmem
+(
 	input  wire clk,
 	input  wire c0, c1, c2, c3,
-	input  wire zneg, // strobes which show positive and negative edges of zclk
 	input  wire zpos,
 
-// Z80
+	// Z80
 	input  wire rst,
 	input  wire [15:0] za,
 	output wire [ 7:0] zd_out,  // output to Z80 bus
@@ -19,13 +18,13 @@ module zmem(
 	input  wire opfetch,
 	input  wire opfetch_s,
 	input  wire mreq,
-   input  wire memrd,
-   input  wire memwr,
+	input  wire memrd,
+	input  wire memwr,
 	input  wire memwr_s,
 
 	input  wire [ 1:0] turbo, 	   // 2'b00 - 3.5,
-	                              // 2'b01 - 7.0,
-	                              // 2'b1x - 14.0
+											// 2'b01 - 7.0,
+											// 2'b1x - 14.0
 	input wire [3:0] cache_en,
 	input wire [3:0] memconf,
 	input wire [31:0] xt_page,
@@ -35,19 +34,19 @@ module zmem(
 	output wire csrom,
 	output wire romoe_n,
 	output wire romwe_n,
-	
+
 	output wire csvrom,
 	output wire dos,
-  	output wire dos_on,
+	output wire dos_on,
 	output wire dos_off,
 	output wire dos_change,
-	
+
 	output wire vdos,
 	output reg pre_vdos,
 	input wire vdos_on,
 	input wire vdos_off,
 
-// DRAM
+	// DRAM
 	output wire        cpu_req,
 	output wire [20:0] cpu_addr,
 	output wire        cpu_wrbsel,
@@ -56,13 +55,12 @@ module zmem(
 	input  wire        cpu_strobe,
 	input  wire        cpu_latch,
 	output wire        cpu_stall,    // for zclock
-	
+
 	input  wire        loader,
 
 	input wire testkey,		// DEBUG!!!
 	input wire intt,		   // DEBUG!!!
 	output wire [3:0] tst
-	
 );
 
   assign tst[0]  = memwr && win0; 
@@ -204,14 +202,11 @@ module zmem(
 	//wire stall14 = stall14_ini || stall14_cyc || stall14_fin; //- not work
 	wire stall14 = stall14_ini || stall14_cyc; //WORK
 	
-	//wire dram_beg = (!cache_hit_en || ramwr) && zpos && ramreq_s_n;                                //modif N1 
 	wire dram_beg = (!cache_hit_en && ( memconf[3] ? 1'b1 : ramrd ) || ramwr) && zpos && ramreq_s_n;  //--   N2
 	                                  //if BANK0-RAM, WR enable all time for 14 MHz
 	wire ramreq_s_n = ramreq_r_n && ramreq;
 	reg ramreq_r_n;
-	//always @(posedge clk) if (zneg)
-	always @(posedge clk) if (zpos)
-		ramreq_r_n <= !mreq;
+	always @(posedge clk) if (zpos) ramreq_r_n <= !mreq;
 
 	reg pending_cpu_req;
 	always @(posedge clk)
