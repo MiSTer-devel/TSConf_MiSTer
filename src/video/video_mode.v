@@ -10,7 +10,6 @@ module video_mode
 	input wire [7:0] vpage,
 	input wire [7:0] vconf,
 	input wire ts_rres_ext,
-	input wire v60hz,
 
 	// video parameters & mode controls
 	input  wire [8:0] gx_offs,
@@ -31,7 +30,6 @@ module video_mode
 	input wire pix_start,
 	input wire line_start_s,
 	output wire tv_hires,
-	output reg  vga_hires,
 	output wire [1:0] render_mode,
 	output wire pix_stb,
 	output wire	fetch_stb,
@@ -54,8 +52,6 @@ wire [1:0] rres = vconf[7:6];
 
 // clocking strobe for pixels (TV)
 assign pix_stb = tv_hires ? f1 : c3;
-
-always @(posedge clk) if (line_start_s) vga_hires <= tv_hires;
 
 // Modes
 localparam M_ZX = 2'h0;		// ZX
@@ -181,15 +177,15 @@ assign hp_end[1] = 9'd428;	// 320
 assign hp_end[2] = 9'd428;	// 320
 assign hp_end[3] = 9'd448;	// 360
 
-assign vp_beg[0] = v60hz ? 9'd046 : 9'd080;	// 192 (22-24-192-24)/(32-48-192-48) (blank-border-pixels-border)
-assign vp_beg[1] = v60hz ? 9'd042 : 9'd076;	// 200 (22-20-200-20)/(32-44-200-44)
-assign vp_beg[2] = v60hz ? 9'd022 : 9'd056;	// 240 (22-0-240-0)/(32-24-240-24)
-assign vp_beg[3] = v60hz ? 9'd022 : 9'd032;	// 288 (22-0-240-0)/(32-0-288-0)
+assign vp_beg[0] = 9'd080;	// 192 (22-24-192-24)/(32-48-192-48) (blank-border-pixels-border)
+assign vp_beg[1] = 9'd076;	// 200 (22-20-200-20)/(32-44-200-44)
+assign vp_beg[2] = 9'd056;	// 240 (22-0-240-0)/(32-24-240-24)
+assign vp_beg[3] = 9'd032;	// 288 (22-0-240-0)/(32-0-288-0)
 
-assign vp_end[0] = v60hz ? 9'd238 : 9'd272;	// 192
-assign vp_end[1] = v60hz ? 9'd242 : 9'd276;	// 200
-assign vp_end[2] = v60hz ? 9'd262 : 9'd296;	// 240
-assign vp_end[3] = v60hz ? 9'd262 : 9'd320;	// 240/288
+assign vp_end[0] = 9'd272;	// 192
+assign vp_end[1] = 9'd276;	// 200
+assign vp_end[2] = 9'd296;	// 240
+assign vp_end[3] = 9'd320;	// 240/288
 
 assign x_tile[0] = 6'd34;	// 256
 assign x_tile[1] = 6'd42;	// 320

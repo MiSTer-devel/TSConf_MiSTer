@@ -20,7 +20,6 @@ module video_top
 	// video syncs
 	output wire	hsync,
 	output wire	vsync,
-	output wire	csync,
 	output wire hblank,
 	output wire vblank,
 	output wire pix_stb,
@@ -80,12 +79,7 @@ module video_top
 	input  wire        ts_next,
 	output wire [20:0] tm_addr,
 	output wire        tm_req,
-	input  wire        tm_next,
-
-	// video controls
-	input wire cfg_60hz,
-	input wire sync_pol,
-	input wire vga_on
+	input  wire        tm_next
 );
 
 
@@ -119,15 +113,11 @@ wire [9:0] x_offs_mode;
 wire [4:0] go_offs;
 wire [1:0] render_mode;
 wire tv_hires;
-wire vga_hires;
-wire v60hz;
 wire nogfx  = vconf[5];
 wire notsu  = vconf[4];
 wire gfxovr = vconf[3];
 wire tv_hblank;
 wire tv_vblank;
-wire vga_hblank;
-wire vga_vblank;
 
 // counters
 wire [7:0] cnt_col;
@@ -140,7 +130,6 @@ wire [8:0] lcount;
 wire frame_start;
 wire pix_start;
 wire tv_pix_start;
-wire vga_pix_start;
 wire ts_start;
 wire v_ts;
 wire v_pf;
@@ -160,7 +149,6 @@ wire fetch_stb;
 // video data
 wire [7:0] border;
 wire [7:0] vplex;
-wire [7:0] vgaplex;
 
 // TS
 wire tsr_go;
@@ -178,10 +166,6 @@ wire [8:0] ts_waddr;
 wire [7:0] ts_wdata;
 wire ts_we;
 wire [8:0] ts_raddr;
-
-// VGA-line
-wire [9:0] vga_cnt_in;
-wire [9:0] vga_cnt_out;
 
 video_ports video_ports
 (
@@ -243,7 +227,6 @@ video_mode video_mode
 	.c3			   (c3),
 	.vpage	    	(vpage),
 	.vconf	    	(vconf),
-	.v60hz	    	(v60hz),
 	.fetch_sel		(fetch_sel),
 	.fetch_bsl		(fetch_bsl),
 	.fetch_cnt	   (scnt),
@@ -268,7 +251,6 @@ video_mode video_mode
 	.line_start_s	(line_start_s),
 	.pix_start	   (pix_start),
 	.tv_hires		(tv_hires),
-	.vga_hires	   (vga_hires),
 	.pix_stb	    	(pix_stb),
 	.render_mode	(render_mode),
 	.video_addr	   (video_addr),
@@ -299,13 +281,8 @@ video_sync video_sync
 	.vint_beg		(vint_beg),
 	.hsync			(hsync),
 	.vsync			(vsync),
-	.csync			(csync),
 	.tv_hblank		(tv_hblank),
 	.tv_vblank		(tv_vblank),
-	.vga_hblank		(vga_hblank),
-	.vga_vblank		(vga_vblank),
-	.vga_cnt_in		(vga_cnt_in),
-	.vga_cnt_out	(vga_cnt_out),
 	.ts_raddr	   (ts_raddr),
 	.lcount			(lcount),
 	.cnt_col       (cnt_col),
@@ -327,10 +304,6 @@ video_sync video_sync
 	.hvpix			(hvpix),
 	.hvtspix       (hvtspix),
 	.nogfx			(nogfx),
-	.cfg_60hz		(cfg_60hz),
-	.sync_pol		(sync_pol),
-	.v60hz			(v60hz),
-	.vga_on			(vga_on),
 	.video_go		(video_go),
 	.video_pre_next(video_pre_next)
 );
@@ -440,28 +413,23 @@ video_render video_render
 video_out video_out
 (
 	.clk				(clk),
-	.f0				(f0),
 	.c3				(c3),
-	.vga_on			(vga_on),
 	.tv_blank 		(tv_hblank|tv_vblank),
-	.vga_blank		(vga_hblank|vga_vblank),
 	.palsel			(palsel[3:0]),
 	.plex_sel_in	({h1, f1}),
 	.tv_hires		(tv_hires),
-	.vga_hires		(vga_hires),
 	.cram_addr_in	(zma),
 	.cram_data_in  (zmd[15:0]),
 	.cram_we			(cram_we),
 	.vplex_in		(vplex),
-	.vgaplex			(vgaplex),
 	.vred   			(vred),
 	.vgrn     		(vgrn),
 	.vblu				(vblu),
 	.vdac_mode     (vdac_mode)
 );
 
-assign hblank = vga_on ? vga_hblank : tv_hblank;
-assign vblank = vga_on ? vga_vblank : tv_vblank;
+assign hblank = tv_hblank;
+assign vblank = tv_vblank;
 
 // 2 buffers: 512 pixels * 8 bits (9x8) - used as bitmap buffer for TS overlay over graphics
 // (2 altdprams)
@@ -495,18 +463,5 @@ dpram #(.ADDRWIDTH(9))  video_tsline1
 	.address_b  (ts_raddr),
 	.q_b        (ts_rdata1)
 );
-
-// 2 lines * 512 pix * 8 bit (10x8) - used for VGA doubler
-// (1 altdpram)
-dpram #(.ADDRWIDTH(10)) video_vmem
-(
-	.clock		(clk),
-	.address_a	(vga_cnt_in),
-	.data_a		(vplex),
-	.wren_a		(c3),
-	.address_b	(vga_cnt_out),
-	.q_b			(vgaplex)
-);
-
 
 endmodule
