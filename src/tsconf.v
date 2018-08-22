@@ -56,8 +56,8 @@
 module tsconf
 (
 	// Clocks
-	input         clk_84mhz,
-	input         clk_28mhz,
+	input         clk,
+	input         ce,
 
 	// SDRAM (32MB 16x16bit)
 	inout  [15:0] SDRAM_DQ,
@@ -284,6 +284,8 @@ wire [7:0]  mouse_do;
 
    
 // clock
+wire clk_28mhz = clk & ce;
+
 wire f0,f1;
 wire h0,h1;
 wire c0,c1,c2,c3;
@@ -321,11 +323,14 @@ zclock TS02
 	.turbo(turbo)
 );
 
+reg zclk_r;
+always @(posedge clk) zclk_r <= zclk;
+
 T80s CPU
 (
 	.RESET_n(~reset),
-	.CLK_n(zclk), //clk_28mhz),
-	//.CEN(zpos),
+	.CLK_n(clk),
+	.CEN(~zclk_r & zclk),
 	.INT_n(cpu_int_n_TS),
 	.M1_n(cpu_m1_n),
 	.MREQ_n(cpu_mreq_n),
@@ -598,10 +603,7 @@ video_top TS08
 	.ts_next(ts_next),
 	.tm_addr(tm_addr),
 	.tm_req(tm_req),
-	.tm_next(tm_next),
-	.cfg_60hz(1),		// 0-60Hz, 1-48Hz
-	.sync_pol(0),		// 0-positive, 1-negative
-	.vga_on(0)		// 1-31kHZ
+	.tm_next(tm_next)
 );
 
 dma TS09
@@ -681,7 +683,7 @@ zint TS13
 wire [7:0] bios_do_bus;
 dpram #(.ADDRWIDTH(16), .MEM_INIT_FILE("tsbios.mif")) BIOS
 (
-	.clock(clk_28mhz),
+	.clock(clk),
 	.address_a({cpu_addr_20[14:0],cpu_wrbsel}),
 	.q_a(bios_do_bus),
 	
@@ -693,7 +695,7 @@ dpram #(.ADDRWIDTH(16), .MEM_INIT_FILE("tsbios.mif")) BIOS
 // SDRAM Controller
 sdram SE4
 (
-	.clk(clk_84mhz),
+	.clk(clk),
 	.clk_28mhz(clk_28mhz),
 	.c0(c0),
 	.c3(c3),
@@ -832,12 +834,6 @@ turbosound SE12
 
 
 // General Sound
-reg ce_gs;
-always @(posedge clk_84mhz) begin
-	ce_gs <= clk_28mhz;
-	if(ce_gs) ce_gs <= 0;
-end
-
 wire [14:0] gs_l;
 wire [14:0] gs_r;
 wire [7:0]  gs_do_bus;
@@ -846,8 +842,8 @@ wire        gs_sel = ~cpu_iorq_n & cpu_m1_n & (cpu_a_bus[7:4] == 'hB && cpu_a_bu
 gs #("src/sound/gs105b.mif") U15
 (
 	.RESET(reset),
-	.CLK(clk_84mhz),
-	.CE(ce_gs),
+	.CLK(clk),
+	.CE(ce),
 	
 	.A(cpu_a_bus[3]),
 	.DI(cpu_do_bus),

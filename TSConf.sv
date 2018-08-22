@@ -149,21 +149,23 @@ assign CMOSCfg[27:25]= status[27:25];
 
 
 ////////////////////   CLOCKS   ///////////////////
-wire locked;
-wire clk_mem;
 wire clk_sys;
-wire clk_28m;
 
 pll pll
 (
 	.refclk(CLK_50M),
-	.rst(0),
-	.outclk_0(clk_mem),
-	.outclk_1(SDRAM_CLK),
-	.outclk_2(clk_sys),
-	.outclk_3(clk_28m),
-	.locked(locked)
+	.outclk_0(clk_sys),
+	.outclk_1(SDRAM_CLK)
 );
+
+reg ce_28m;
+always @(negedge clk_sys) begin
+	reg [1:0] div;
+	
+	div <= div + 1'd1;
+	ce_28m <= !div;
+end
+
 
 //////////////////   HPS I/O   ///////////////////
 wire  [5:0] joy_0;
@@ -238,11 +240,6 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 	.ioctl_index(ioctl_index)
 );
 
-reg [2:0] loader_wr;
-always @(posedge clk_sys) begin
-	if(ioctl_wr && ioctl_download && !ioctl_index && !ioctl_addr[24:16]) loader_wr <= '1;
-	else loader_wr <= loader_wr << 1;
-end
 
 ////////////////////  MAIN  //////////////////////
 wire [7:0] R,G,B;
@@ -254,8 +251,8 @@ wire reset;
 
 tsconf tsconf
 (
-	.clk_84mhz(clk_mem),
-	.clk_28mhz(clk_28m),
+	.clk(clk_sys),
+	.ce(ce_28m),
 
 	.SDRAM_DQ(SDRAM_DQ),
 	.SDRAM_A(SDRAM_A),
@@ -305,10 +302,10 @@ tsconf tsconf
 
 	.loader_addr(ioctl_addr[15:0]),
 	.loader_data(ioctl_dout),
-	.loader_wr(loader_wr[2])
+	.loader_wr(ioctl_wr && ioctl_download && !ioctl_index && !ioctl_addr[24:16])
 );
 
-assign DDRAM_CLK = clk_mem;
+assign DDRAM_CLK = clk_sys;
 
 wire [20:0] gs_mem_addr;
 wire  [7:0] gs_mem_dout;
