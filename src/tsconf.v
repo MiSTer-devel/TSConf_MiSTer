@@ -160,8 +160,6 @@ wire        dram_req;
 wire        dram_rnw;
 wire        dos;
 
-wire [7:0]  gluclock_addr;
-
 wire        vdos;
 wire        pre_vdos;
 wire        vdos_off;
@@ -186,6 +184,7 @@ wire        iowr_s;
 wire        iorw_s;
 wire        memwr_s;
 wire        opfetch_s;
+wire        regs_we;
 
 // zports OUT
 wire [7:0]  dout_ports;
@@ -382,7 +381,6 @@ zports TS05
 	.dataout(ena_ports),
 	.a(cpu_a_bus),
 	.rst(reset),
-	.loader(0),		//loader, 		-- for load ROM, SPI should be enable
 	.opfetch(opfetch),		// from zsignals
 	.rd(rd),
 	.wr(wr),
@@ -393,9 +391,8 @@ zports TS05
 	.iord_s(iord_s),
 	.iowr(iowr),
 	.iowr_s(iowr_s),
-	.iorw(iorw),
-	.iorw_s(iorw_s),
-	.external_port(),		// asserts for AY and VG93 accesses
+	.iordwr(iorw),
+	.iordwr_s(iorw_s),
 	.zborder_wr(zborder_wr),
 	.border_wr(border_wr),
 	.zvpage_wr(zvpage_wr),
@@ -424,6 +421,7 @@ zports TS05
 	.vint_begh_wr(vint_begh_wr),
 	.xt_page(xt_page),
 	.fmaddr(fmaddr),
+	.regs_we(regs_we),
 	.sysconf(sysconf),
 	.memconf(memconf),
 	.cacheconf(cacheconf),
@@ -434,7 +432,6 @@ zports TS05
 	.vdos(vdos),
 	.vdos_on(vdos_on),
 	.vdos_off(vdos_off),
-	.rstrom(2'b11),
 	.tape_read(1),
 	.keys_in(kb_do_bus),		// keys (port FE)
 	.mus_in(mouse_do),		// mouse (xxDF)
@@ -445,12 +442,9 @@ zports TS05
 	.sd_start(cpu_spi_req),		// to SPI
 	.sd_datain(cpu_spi_din),		// to SPI(7 downto 0);
 	.sd_dataout(spi_dout),		// from SPI(7 downto 0); 
-	.gluclock_addr(gluclock_addr),
-	.wait_read(mc146818a_do_bus),
-	.com_data_rx(8'b00000000),		//uart_do_bus,
-	.com_status(8'b10010000),		//'1' & uart_tx_empty & uart_tx_fifo_empty & "1000" & uart_rx_avail,
-	//com_status=> '0' & uart_tx_empty & uart_tx_fifo_empty & "0000" & '1',
-	.lock_conf(1)
+	.wait_addr(wait_addr),
+	.wait_start_gluclock(wait_start_gluclock),
+	.wait_read(mc146818a_do_bus)
 );
 
 zmem TS06
@@ -646,7 +640,8 @@ zmaps TS10
 	.dma_cram_we(dma_cram_we),
 	.dma_sfile_we(dma_sfile_we),
 	.cram_we(cram_we),
-	.sfile_we(sfile_we)
+	.sfile_we(sfile_we),
+	.regs_we(regs_we)
 );
 
 spi TS11
@@ -745,21 +740,15 @@ kempston_mouse KM
 );
 
 // MC146818A,RTC
-wire        mc146818a_wr = port_bff7 && ~cpu_wr_n;
-wire [7:0]  mc146818a_do_bus;
-wire        port_bff7 = ~cpu_iorq_n && cpu_a_bus == 16'hBFF7 && cpu_m1_n && port_eff7_reg[7];
+wire [7:0] wait_addr;
+wire       wait_start_gluclock;
+wire [7:0] mc146818a_do_bus;
 
 reg ena_0_4375mhz;
 always @(negedge clk_28mhz) begin
 	reg [5:0] div;
 	div <= div + 1'd1;
 	ena_0_4375mhz <= !div; //28MHz/64
-end
-
-reg [7:0] port_eff7_reg;
-always @(posedge clk_28mhz) begin
-	if (reset) port_eff7_reg <= 0;
-	else if (~cpu_iorq_n && ~cpu_wr_n && cpu_a_bus == 16'hEFF7) port_eff7_reg <= cpu_do_bus;	//for RTC
 end
 
 mc146818a SE9
@@ -771,8 +760,8 @@ mc146818a SE9
 	.KEYSCANCODE(key_scancode),
 	.RTC(RTC),
 	.CMOSCfg(CMOSCfg),
-	.WR(mc146818a_wr),
-	.A(gluclock_addr[7:0]),
+	.WR(wait_start_gluclock & ~cpu_wr_n),
+	.A(wait_addr),
 	.DI(cpu_do_bus),
 	.DO(mc146818a_do_bus)
 );
@@ -909,15 +898,14 @@ assign RESET_OUT = reset;
 
 // CPU interface
 assign cpu_di_bus = 
-		(csrom && ~cpu_mreq_n && ~cpu_rd_n) 								?	bios_do_bus			:	// BIOS
-		(~cpu_mreq_n && ~cpu_rd_n)												?	sdr_do_bus			:	// SDRAM
-		(intack)																		?	im2vect 				:
-		(port_bff7 && port_eff7_reg[7] && ~cpu_iorq_n && ~cpu_rd_n)	? 	mc146818a_do_bus	:	// MC146818A
-		(gs_sel && ~cpu_rd_n)													?	gs_do_bus			:	// General Sound
-		(ts_enable && ~cpu_rd_n)												?	ts_do					:	// TurboSound
-		(cpu_a_bus == 16'h0001 && ~cpu_iorq_n && ~cpu_rd_n)			?	key_scancode		:
-		(ena_ports)																	?	dout_ports			:
-																							8'b11111111;
+		(csrom && ~cpu_mreq_n && ~cpu_rd_n) 						?	bios_do_bus			:	// BIOS
+		(~cpu_mreq_n && ~cpu_rd_n)										?	sdr_do_bus			:	// SDRAM
+		(intack)																?	im2vect 				:
+		(gs_sel && ~cpu_rd_n)											?	gs_do_bus			:	// General Sound
+		(ts_enable && ~cpu_rd_n)										?	ts_do					:	// TurboSound
+		(cpu_a_bus == 16'h0001 && ~cpu_iorq_n && ~cpu_rd_n)	?	key_scancode		:
+		(ena_ports)															?	dout_ports			:
+																					8'b11111111;
 // TURBO
 assign turbo = sysconf[1:0];
 
