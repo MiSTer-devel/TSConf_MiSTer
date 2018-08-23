@@ -150,12 +150,14 @@ assign CMOSCfg[27:25]= status[27:25] + 1'd1;
 
 ////////////////////   CLOCKS   ///////////////////
 wire clk_sys;
+wire clk_vid;
 
 pll pll
 (
 	.refclk(CLK_50M),
 	.outclk_0(clk_sys),
-	.outclk_1(SDRAM_CLK)
+	.outclk_1(SDRAM_CLK),
+	.outclk_2(clk_vid)
 );
 
 reg ce_28m;
@@ -163,6 +165,7 @@ always @(negedge clk_sys) begin
 	reg [1:0] div;
 	
 	div <= div + 1'd1;
+	if(div == 2) div <= 0;
 	ce_28m <= !div;
 end
 
@@ -339,19 +342,20 @@ assign AUDIO_S = 1;
 assign AUDIO_MIX = status[4:3];
 
 reg ce_pix;
-always @(posedge clk_sys) begin
+always @(posedge clk_vid) begin
 	reg old_ce;
 
 	old_ce <= ce_vid;
 	ce_pix <= ~old_ce & ce_vid;
 end
 
-assign CLK_VIDEO = clk_sys;
+assign CLK_VIDEO = clk_vid;
 
 wire [1:0] scale = status[2:1];
 video_mixer video_mixer
 (
 	.*,
+	.clk_sys(clk_vid),
 	.ce_pix_out(CE_PIXEL),
 
 	.scanlines({scale == 3, scale == 2}),
