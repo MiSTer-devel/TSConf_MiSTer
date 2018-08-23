@@ -142,7 +142,7 @@ wire        cpu_strobe;		// arbiter -> zmem
 wire        cpu_latch;		// arbiter -> zmem
 wire [23:0] cpu_addr;
 wire [20:0] cpu_addr_20;
-wire        csvrom;
+wire        csrom;
 wire        curr_cpu;
 
 // SDRAM
@@ -166,7 +166,7 @@ wire        vdos;
 wire        pre_vdos;
 wire        vdos_off;
 wire        vdos_on;
-wire        dos_change;
+wire        dos_on;
 wire        m1;
 wire        rd;
 wire        wr;
@@ -304,7 +304,7 @@ clock TS01
 );
 
 wire zclk;
-wire zpos;
+wire zpos, zneg;
 zclock TS02
 (
 	.clk(clk_28mhz),
@@ -314,8 +314,9 @@ zclock TS02
 	.f1(f1),
 	.zclk_out(zclk),
 	.zpos(zpos),
+	.zneg(zneg),
 	.iorq_s(iorq_s),
-	.dos_on(dos_change),
+	.dos_on(dos_on),
 	.vdos_off(vdos_off),
 	.cpu_stall(cpu_stall),
 	.ide_stall(0),
@@ -460,6 +461,7 @@ zmem TS06
 	.c2(c2),
 	.c3(c3),
 	.zpos(zpos),
+	.zneg(zneg),
 	.rst(reset),		// PLL locked
 	.za(cpu_a_bus),		// from CPU
 	.zd_out(sdr_do_bus),		// output to Z80 bus 8bit ==>
@@ -474,9 +476,9 @@ zmem TS06
 	.cache_en(cacheconf),		// from zport
 	.memconf(memconf[3:0]),
 	.xt_page(xt_page),
-	.csvrom(csvrom),
+	.csrom(csrom),
 	.dos(dos),
-	.dos_change(dos_change),
+	.dos_on(dos_on),
 	.vdos(vdos),
 	.pre_vdos(pre_vdos),
 	.vdos_on(vdos_on),
@@ -488,10 +490,7 @@ zmem TS06
 	.cpu_next(cpu_next),
 	.cpu_strobe(cpu_strobe),		// from ARBITER ACTIVE=HI 	
 	.cpu_latch(cpu_latch),
-	.cpu_stall(cpu_stall),		// for Zclock if HI-> STALL (ZCLK)
-	.loader(0),		// ROM for loader active
-	.testkey(1),
-	.intt(0)
+	.cpu_stall(cpu_stall)		// for Zclock if HI-> STALL (ZCLK)
 );
 
 arbiter TS07
@@ -516,7 +515,7 @@ arbiter TS07
 	.cpu_addr(cpu_addr_20),
 	.cpu_wrdata(cpu_do_bus),
 	.cpu_req(cpu_req),
-	.cpu_rnw(rd | csvrom),
+	.cpu_rnw(rd | csrom),
 	.cpu_wrbsel(cpu_wrbsel),
 	.cpu_next(cpu_next),		// next cycle is allowed to be used by CPU
 	.cpu_strobe(cpu_strobe),		// c2 strobe
@@ -910,7 +909,7 @@ assign RESET_OUT = reset;
 
 // CPU interface
 assign cpu_di_bus = 
-		(csvrom && ~cpu_mreq_n && ~cpu_rd_n) 								?	bios_do_bus			:	// BIOS
+		(csrom && ~cpu_mreq_n && ~cpu_rd_n) 								?	bios_do_bus			:	// BIOS
 		(~cpu_mreq_n && ~cpu_rd_n)												?	sdr_do_bus			:	// SDRAM
 		(intack)																		?	im2vect 				:
 		(port_bff7 && port_eff7_reg[7] && ~cpu_iorq_n && ~cpu_rd_n)	? 	mc146818a_do_bus	:	// MC146818A
