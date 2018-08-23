@@ -61,7 +61,7 @@ end
 
 // ~INT counter
 reg [5:0] intctr;
-wire intctr_fin = intctr[4];   // 32 clks
+wire intctr_fin = intctr[5];   // 32 clks
 
 always @(posedge clk, posedge int_start_frm) begin
 	if (int_start_frm) intctr <= 0;
