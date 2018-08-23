@@ -391,7 +391,7 @@ set_global_assignment -name VERILOG_FILE src/video/video_top.v
 set_global_assignment -name VHDL_FILE src/keyboard.vhd
 set_global_assignment -name VERILOG_FILE src/kempston_mouse.v
 set_global_assignment -name VERILOG_FILE src/spi.v
-set_global_assignment -name VHDL_FILE src/sdram.vhd
+set_global_assignment -name VERILOG_FILE src/sdram.v
 set_global_assignment -name VERILOG_FILE src/clock.v
 set_global_assignment -name VERILOG_FILE src/tsconf.v
 set_global_assignment -name SYSTEMVERILOG_FILE ddram.sv

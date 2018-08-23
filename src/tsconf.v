@@ -65,11 +65,11 @@ module tsconf
 	output  [1:0] SDRAM_BA,
 	output        SDRAM_DQML,
 	output        SDRAM_DQMH,
-	output        SDRAM_WE_N,
-	output        SDRAM_CAS_N,
-	output        SDRAM_RAS_N,
+	output        SDRAM_nCS,
+	output        SDRAM_nCAS,
+	output        SDRAM_nRAS,
+	output        SDRAM_nWE,
 	output        SDRAM_CKE,
-	output        SDRAM_CS_N,
 
 	// VGA
 	output  [7:0] VGA_R,
@@ -148,7 +148,7 @@ wire        curr_cpu;
 // SDRAM
 wire [7:0]  sdr_do_bus;
 wire [15:0] sdr_do_bus_16;
-wire [15:0] sdr2cpu_do_bus_16;
+wire [15:0] sdr_do_bus_16cpu;
 wire        sdr_wr;
 wire        sdr_rd;
 wire        req;
@@ -484,7 +484,7 @@ zmem TS06
 	.cpu_req(cpu_req),
 	.cpu_addr(cpu_addr_20),
 	.cpu_wrbsel(cpu_wrbsel),		// for 16bit data
-	.cpu_rddata(sdr2cpu_do_bus_16),
+	.cpu_rddata(sdr_do_bus_16cpu),
 	.cpu_next(cpu_next),
 	.cpu_strobe(cpu_strobe),		// from ARBITER ACTIVE=HI 	
 	.cpu_latch(cpu_latch),
@@ -506,32 +506,32 @@ arbiter TS07
 	.dram_rnw(dram_rnw),
 	.dram_bsel(dram_bsel),
 	.dram_wrdata(dram_wrdata),		// data to be written
-	.video_addr({3'b000, video_addr}),		// during access block, only when video_strobe==1
+	.video_addr(video_addr),		// during access block, only when video_strobe==1
 	.go(go_arbiter),		// start video access blocks
 	.video_bw(video_bw),		// ZX="11001", [4:3] -total cycles: 11 = 8 / 01 = 4 / 00 = 2
 	.video_pre_next(video_pre_next),
 	.video_next(video_next),		// (c2) at this signal video_addr may be changed; it is one clock leading the video_strobe
 	.video_strobe(video_strobe),		// (c3) one-cycle strobe meaning that video_data is available
 	.next_vid(next_video),		// used for TM prefetch
-	.cpu_addr({csvrom, 2'b00, cpu_addr_20}),
+	.cpu_addr(cpu_addr_20),
 	.cpu_wrdata(cpu_do_bus),
 	.cpu_req(cpu_req),
-	.cpu_rnw(rd),
+	.cpu_rnw(rd | csvrom),
 	.cpu_wrbsel(cpu_wrbsel),
 	.cpu_next(cpu_next),		// next cycle is allowed to be used by CPU
 	.cpu_strobe(cpu_strobe),		// c2 strobe
 	.cpu_latch(cpu_latch),		// c2-c3 strobe
 	.curr_cpu_o(curr_cpu),
-	.dma_addr({3'b000, dma_addr}),
+	.dma_addr(dma_addr),
 	.dma_wrdata(dma_wrdata),
 	.dma_req(dma_req),
 	.dma_rnw(dma_rnw),
 	.dma_next(dma_next),
-	.ts_addr({3'b000, ts_addr}),
+	.ts_addr(ts_addr),
 	.ts_req(ts_req),
 	.ts_pre_next(ts_pre_next),
 	.ts_next(ts_next),
-	.tm_addr({3'b000, tm_addr}),
+	.tm_addr(tm_addr),
 	.tm_req(tm_req),
 	.tm_next(tm_next)
 );
@@ -696,28 +696,27 @@ dpram #(.ADDRWIDTH(16), .MEM_INIT_FILE("tsbios.mif")) BIOS
 sdram SE4
 (
 	.clk(clk),
-	.clk_28mhz(clk_28mhz),
-	.c0(c0),
-	.c3(c3),
-	.curr_cpu(curr_cpu),		// from arbiter for luch DO_cpu
-	.loader(0),		// loader = 1: wr to ROM 
+	.cyc(ce&c3),
+
+	.curr_cpu(curr_cpu),
 	.bsel(dram_bsel),
-	.a(dram_addr),
-	.di(dram_wrdata),
-	.do(sdr_do_bus_16),
-	.do_cpu(sdr2cpu_do_bus_16),
-	.req(dram_req),
-	.rnw(dram_rnw),
-	.cke(SDRAM_CKE),
-	.ras_n(SDRAM_RAS_N),
-	.cas_n(SDRAM_CAS_N),
-	.we_n(SDRAM_WE_N),
-	.cs_n(SDRAM_CS_N),
-	.ba(SDRAM_BA),
-	.ma(SDRAM_A),
-	.dq(SDRAM_DQ[15:0]),
-	.dqml(SDRAM_DQML),
-	.dqmh(SDRAM_DQMH)
+	.A(dram_addr),
+	.DI(dram_wrdata),
+	.DO(sdr_do_bus_16),
+	.DO_cpu(sdr_do_bus_16cpu),
+	.REQ(dram_req),
+	.RNW(dram_rnw),
+
+	.SDRAM_DQ(SDRAM_DQ),
+	.SDRAM_A(SDRAM_A),
+	.SDRAM_BA(SDRAM_BA),
+	.SDRAM_DQML(SDRAM_DQML),
+	.SDRAM_DQMH(SDRAM_DQMH),
+	.SDRAM_nCS(SDRAM_nCS),
+	.SDRAM_nCAS(SDRAM_nCAS),
+	.SDRAM_nRAS(SDRAM_nRAS),
+	.SDRAM_nWE(SDRAM_nWE),
+	.SDRAM_CKE(SDRAM_CKE)
 );
 
 
