@@ -362,12 +362,17 @@ set_global_assignment -name CDF_FILE jtag.cdf
 set_global_assignment -name QIP_FILE sys/sys.qip
 set_global_assignment -name QSYS_FILE sys/vip.qsys
 set_global_assignment -name QIP_FILE src/t80/T80.qip
-set_global_assignment -name VERILOG_FILE src/cpu/zsignals.v
-set_global_assignment -name VERILOG_FILE src/cpu/zports.v
-set_global_assignment -name VERILOG_FILE src/cpu/zmem.v
-set_global_assignment -name VERILOG_FILE src/cpu/zmaps.v
-set_global_assignment -name VERILOG_FILE src/cpu/zint.v
-set_global_assignment -name VERILOG_FILE src/cpu/zclock.v
+set_global_assignment -name VERILOG_FILE src/memory/dma.v
+set_global_assignment -name VERILOG_FILE src/memory/arbiter.v
+set_global_assignment -name VERILOG_FILE src/memory/sdram.v
+set_global_assignment -name SYSTEMVERILOG_FILE src/memory/ddram.sv
+set_global_assignment -name VERILOG_FILE src/memory/dpram.v
+set_global_assignment -name VERILOG_FILE src/common/zsignals.v
+set_global_assignment -name VERILOG_FILE src/common/zports.v
+set_global_assignment -name VERILOG_FILE src/common/zmem.v
+set_global_assignment -name VERILOG_FILE src/common/zmaps.v
+set_global_assignment -name VERILOG_FILE src/common/zint.v
+set_global_assignment -name VERILOG_FILE src/common/zclock.v
 set_global_assignment -name VERILOG_FILE src/rtc/mc146818a.v
 set_global_assignment -name VHDL_FILE src/sound/soundrive.vhd
 set_global_assignment -name QIP_FILE src/sound/jt12/jt12.qip
@@ -377,8 +382,6 @@ set_global_assignment -name SYSTEMVERILOG_FILE src/sound/turbosound.sv
 set_global_assignment -name VERILOG_FILE src/sound/gs.v
 set_global_assignment -name SYSTEMVERILOG_FILE src/sound/saa1099.sv
 set_global_assignment -name SYSTEMVERILOG_FILE src/sound/compressor.sv
-set_global_assignment -name VERILOG_FILE src/memory/dma.v
-set_global_assignment -name VERILOG_FILE src/memory/arbiter.v
 set_global_assignment -name VERILOG_FILE src/video/video_ts_render.v
 set_global_assignment -name VERILOG_FILE src/video/video_ts.v
 set_global_assignment -name VERILOG_FILE src/video/video_sync.v
@@ -391,10 +394,7 @@ set_global_assignment -name VERILOG_FILE src/video/video_top.v
 set_global_assignment -name VHDL_FILE src/keyboard.vhd
 set_global_assignment -name VERILOG_FILE src/kempston_mouse.v
 set_global_assignment -name VERILOG_FILE src/spi.v
-set_global_assignment -name VERILOG_FILE src/sdram.v
 set_global_assignment -name VERILOG_FILE src/clock.v
 set_global_assignment -name VERILOG_FILE src/tsconf.v
-set_global_assignment -name SYSTEMVERILOG_FILE ddram.sv
-set_global_assignment -name VERILOG_FILE dpram.v
 set_global_assignment -name SYSTEMVERILOG_FILE TSConf.sv
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

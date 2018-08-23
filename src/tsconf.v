@@ -675,7 +675,7 @@ zint TS13
    
 // BIOS
 wire [7:0] bios_do_bus;
-dpram #(.ADDRWIDTH(16), .MEM_INIT_FILE("tsbios.mif")) BIOS
+dpram #(.ADDRWIDTH(16), .MEM_INIT_FILE("src/tsbios.mif")) BIOS
 (
 	.clock(clk),
 	.address_a({cpu_addr_20[14:0],cpu_wrbsel}),
