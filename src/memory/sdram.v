@@ -18,8 +18,8 @@ module sdram
 	inout  reg [15:0] SDRAM_DQ,
 	output reg [12:0] SDRAM_A,
 	output reg  [1:0] SDRAM_BA,
-	output reg        SDRAM_DQML,
-	output reg        SDRAM_DQMH,
+	output            SDRAM_DQML,
+	output            SDRAM_DQMH,
 	output            SDRAM_nCS,
 	output            SDRAM_nCAS,
 	output            SDRAM_nRAS,
@@ -41,17 +41,17 @@ always @(posedge clk) begin
 	reg  [4:0] state;
 	reg        rd;
 	reg  [8:0] col;
+	reg  [1:0] dqm;
+
+	SDRAM_DQ <= 16'hZZZZ;
 
 	case (state)
 
 	// Init
 	'h00:	begin
 			sdr_cmd <= SdrCmd_pr;		// PRECHARGE
-			SDRAM_DQ <= 16'bZZZZZZZZZZZZZZZZ;
 			SDRAM_A <= 0;
 			SDRAM_BA <= 0;
-			SDRAM_DQML <= 1;
-			SDRAM_DQMH <= 1;
 			state <= state + 1'd1;
 		end
 
@@ -79,8 +79,7 @@ always @(posedge clk) begin
 				if (REQ) begin
 					sdr_cmd <= SdrCmd_ac;	// ACTIVE
 					{SDRAM_A,SDRAM_BA,col} <= A;
-					SDRAM_DQML <= ~(bsel[0] | RNW);
-					SDRAM_DQMH <= ~(bsel[1] | RNW);
+					dqm <= RNW ? 2'b00 : ~bsel;
 					rd <= RNW;
 					state <= state + 1'd1;
 				end else begin
@@ -92,7 +91,7 @@ always @(posedge clk) begin
 
 	// Single read/write - with auto precharge
 	'h1A: begin
-			SDRAM_A <= {4'b0010, col};		// A10 = 1 enable auto precharge; A9..0 = column
+			SDRAM_A <= {dqm, 2'b10, col};	// A10 = 1 enable auto precharge; A9..0 = column
 			state <= 'h16;
 			if (rd) sdr_cmd <= SdrCmd_rd;	// READ
 			else begin
@@ -104,7 +103,6 @@ always @(posedge clk) begin
 	// NOP
 	default:
 		begin
-			SDRAM_DQ <= 16'bZZZZZZZZZZZZZZZZ;
 			sdr_cmd <= SdrCmd_xx;
 			state <= state + 1'd1;
 		end
@@ -116,5 +114,7 @@ assign SDRAM_nCS  = 0;
 assign SDRAM_nRAS = sdr_cmd[2];
 assign SDRAM_nCAS = sdr_cmd[1];
 assign SDRAM_nWE  = sdr_cmd[0];
+assign SDRAM_DQML = SDRAM_A[11];
+assign SDRAM_DQMH = SDRAM_A[12];
 
 endmodule
