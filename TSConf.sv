@@ -279,7 +279,7 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 ////////////////////  MAIN  //////////////////////
 wire [7:0] R,G,B;
 wire HBlank,VBlank;
-wire VSync, HSync;
+wire VS, HS;
 wire ce_vid;
 
 wire reset;
@@ -303,8 +303,8 @@ tsconf tsconf
 	.VGA_R(R),
 	.VGA_G(G),
 	.VGA_B(B),
-	.VGA_HS(HSync),
-	.VGA_VS(VSync),
+	.VGA_HS(HS),
+	.VGA_VS(VS),
 	.VGA_HBLANK(HBlank),
 	.VGA_VBLANK(VBlank),
 	.VGA_CEPIX(ce_vid),
@@ -382,6 +382,13 @@ always @(posedge clk_vid) begin
 end
 
 assign CLK_VIDEO = clk_vid;
+
+reg VSync, HSync;
+always @(posedge CLK_VIDEO) begin
+	HSync <= HS;
+	if(~HSync & HS) VSync <= VS;
+end
+
 
 wire [1:0] scale = status[2:1];
 assign VGA_SL = {scale == 3, scale == 2};
