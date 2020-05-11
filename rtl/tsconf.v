@@ -794,7 +794,7 @@ soundrive SE10
 // Turbosound FM
 reg ce_ym;
 always @(posedge clk_28mhz) begin
-	reg [1:0] div;
+	reg [2:0] div;
 	
 	div <= div + 1'd1;
 	ce_ym <= !div;
@@ -811,8 +811,7 @@ turbosound SE12
 	.RESET(reset),
 
 	.CLK(clk_28mhz),
-	.CE_CPU(zpos),
-	.CE_YM(ce_ym),
+	.CE(ce_ym),
 	.BDIR(ts_we),
 	.BC(cpu_a_bus[14]),
 	.DI(cpu_do_bus),

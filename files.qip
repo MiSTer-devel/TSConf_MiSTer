@@ -12,9 +12,8 @@ set_global_assignment -name VERILOG_FILE rtl/common/zint.v
 set_global_assignment -name VERILOG_FILE rtl/common/zclock.v
 set_global_assignment -name VERILOG_FILE rtl/rtc/mc146818a.v
 set_global_assignment -name VHDL_FILE rtl/sound/soundrive.vhd
-set_global_assignment -name QIP_FILE rtl/sound/jt12/jt12.qip
+set_global_assignment -name QIP_FILE rtl/sound/jt12/jt03.qip
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/sound/ym2149.sv
-set_global_assignment -name SYSTEMVERILOG_FILE rtl/sound/ym2203.sv
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/sound/turbosound.sv
 set_global_assignment -name VERILOG_FILE rtl/sound/gs.v
 set_global_assignment -name SYSTEMVERILOG_FILE rtl/sound/saa1099.sv

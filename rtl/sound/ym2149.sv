@@ -1,6 +1,6 @@
 //
 // Copyright (c) MikeJ - Jan 2005
-// Copyright (c) 2016-2018 Sorgelig
+// Copyright (c) 2016-2019 Sorgelig
 //
 // All rights reserved
 //
@@ -151,18 +151,13 @@ always @(posedge CLK) begin
 
 	if(CE) begin
 		if (ena_div_noise) begin
-			if(ymreg[6][4:0]) begin
-				if (noise_gen_cnt >= ymreg[6][4:0] - 1'd1) begin
-					noise_gen_cnt <= 0;
-					poly17 <= {(poly17[0] ^ poly17[2] ^ !poly17), poly17[16:1]};
-				end else begin
-					noise_gen_cnt <= noise_gen_cnt + 1'd1;
-				end
-				noise_gen_op <= {3{poly17[0]}};
-			end else begin
-				noise_gen_op <= ymreg[7][5:3];
+			if (!ymreg[6][4:0] || noise_gen_cnt >= ymreg[6][4:0] - 1'd1) begin
 				noise_gen_cnt <= 0;
+				poly17 <= {(poly17[0] ^ poly17[2] ^ !poly17), poly17[16:1]};
+			end else begin
+				noise_gen_cnt <= noise_gen_cnt + 1'd1;
 			end
+			noise_gen_op <= {3{poly17[0]}};
 		end
 	end
 end
@@ -192,7 +187,7 @@ always @(posedge CLK) begin
 						tone_gen_cnt[i] <= tone_gen_cnt[i] + 1'd1;
 					end
 				end else begin
-					tone_gen_op[i] <= ymreg[7][i];
+					tone_gen_op[i] <= ~ymreg[7][i];
 					tone_gen_cnt[i] <= 0;
 				end
 			end
