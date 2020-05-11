@@ -37,7 +37,7 @@ wire [7:0] vdata = tv_hires ? {palsel, plex_sel_in[1] ? vplex[3:0] : vplex[7:4]}
 
 // CRAM
 wire [15:0] vpixel;
-dpram #(.DATAWIDTH(16), .ADDRWIDTH(8), .MEM_INIT_FILE("src/video/video_cram.mif")) video_cram
+dpram #(.DATAWIDTH(16), .ADDRWIDTH(8), .MEM_INIT_FILE("rtl/video/video_cram.mif")) video_cram
 (
 	.clock    (clk),
 	.address_a(cram_addr_in),

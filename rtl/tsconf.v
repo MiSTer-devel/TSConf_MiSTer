@@ -70,6 +70,7 @@ module tsconf
 	output        SDRAM_nRAS,
 	output        SDRAM_nWE,
 	output        SDRAM_CKE,
+	output        SDRAM_CLK,
 
 	// VGA
 	output  [7:0] VGA_R,
@@ -329,7 +330,7 @@ always @(posedge clk) zclk_r <= zclk;
 T80s CPU
 (
 	.RESET_n(~reset),
-	.CLK_n(clk),
+	.CLK(clk),
 	.CEN(~zclk_r & zclk),
 	.INT_n(cpu_int_n_TS),
 	.M1_n(cpu_m1_n),
@@ -675,7 +676,7 @@ zint TS13
    
 // BIOS
 wire [7:0] bios_do_bus;
-dpram #(.ADDRWIDTH(16), .MEM_INIT_FILE("src/tsbios.mif")) BIOS
+dpram #(.ADDRWIDTH(16), .MEM_INIT_FILE("rtl/tsbios.mif")) BIOS
 (
 	.clock(clk),
 	.address_a({cpu_addr_20[14:0],cpu_wrbsel}),
@@ -710,7 +711,8 @@ sdram SE4
 	.SDRAM_nCAS(SDRAM_nCAS),
 	.SDRAM_nRAS(SDRAM_nRAS),
 	.SDRAM_nWE(SDRAM_nWE),
-	.SDRAM_CKE(SDRAM_CKE)
+	.SDRAM_CKE(SDRAM_CKE),
+	.SDRAM_CLK(SDRAM_CLK)
 );
 
 
@@ -826,7 +828,7 @@ wire [14:0] gs_r;
 wire [7:0]  gs_do_bus;
 wire        gs_sel = ~cpu_iorq_n & cpu_m1_n & (cpu_a_bus[7:4] == 'hB && cpu_a_bus[2:0] == 'h3);
 
-gs #("src/sound/gs105b.mif") U15
+gs #("rtl/sound/gs105b.mif") U15
 (
 	.RESET(reset),
 	.CLK(clk),

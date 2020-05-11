@@ -24,9 +24,10 @@ module sdram
 	output            SDRAM_nCAS,
 	output            SDRAM_nRAS,
 	output            SDRAM_nWE,
-	output            SDRAM_CKE 
+	output            SDRAM_CKE,
+	output            SDRAM_CLK
 );
-   
+
 reg [2:0] sdr_cmd;
 
 localparam SdrCmd_xx = 3'b111; // no operation
@@ -116,5 +117,30 @@ assign SDRAM_nCAS = sdr_cmd[1];
 assign SDRAM_nWE  = sdr_cmd[0];
 assign SDRAM_DQML = SDRAM_A[11];
 assign SDRAM_DQMH = SDRAM_A[12];
+
+altddio_out
+#(
+	.extend_oe_disable("OFF"),
+	.intended_device_family("Cyclone V"),
+	.invert_output("OFF"),
+	.lpm_hint("UNUSED"),
+	.lpm_type("altddio_out"),
+	.oe_reg("UNREGISTERED"),
+	.power_up_high("OFF"),
+	.width(1)
+)
+sdramclk_ddr
+(
+	.datain_h(1'b0),
+	.datain_l(1'b1),
+	.outclock(clk),
+	.dataout(SDRAM_CLK),
+	.aclr(1'b0),
+	.aset(1'b0),
+	.oe(1'b1),
+	.outclocken(1'b1),
+	.sclr(1'b0),
+	.sset(1'b0)
+);
 
 endmodule

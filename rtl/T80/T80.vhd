@@ -79,7 +79,6 @@ library IEEE;
 use IEEE.std_logic_1164.all;
 use IEEE.numeric_std.all;
 use IEEE.STD_LOGIC_UNSIGNED.all;
-use work.T80_Pack.all;
 
 entity T80 is
 	generic(
@@ -260,7 +259,7 @@ begin
 				else DOR(127 downto 112) & DOR(47 downto 0) & DOR(63 downto 48) & DOR(111 downto 64) & 
 						std_logic_vector(PC) & std_logic_vector(SP) & std_logic_vector(R) & I & Fp & Ap & F & ACC;
 
-	mcode : T80_MCode
+	mcode : work.T80_MCode
 		generic map(
 			Mode   => Mode,
 			Flag_C => Flag_C,
@@ -328,7 +327,7 @@ begin
 			Write       => Write,
 			XYbit_undoc => XYbit_undoc);
 
-	alu : T80_ALU
+	alu : work.T80_ALU
 		generic map(
 			Mode   => Mode,
 			Flag_C => Flag_C,
@@ -920,7 +919,7 @@ begin
 		end if;
 	end process;
 
-	Regs : T80_Reg
+	Regs : work.T80_Reg
 		port map(
 			Clk => CLK_n,
 			CEN => ClkEn,

@@ -188,8 +188,7 @@ pll pll
 (
 	.refclk(CLK_50M),
 	.outclk_0(clk_sys),
-	.outclk_1(SDRAM_CLK),
-	.outclk_2(clk_vid)
+	.outclk_1(clk_vid)
 );
 
 reg ce_28m;
@@ -213,6 +212,7 @@ wire [24:0] ps2_mouse;
 wire [10:0] ps2_key;
 
 wire        forced_scandoubler;
+wire [21:0] gamma_bus;
 
 wire [31:0] sd_lba;
 wire        sd_rd;
@@ -249,6 +249,7 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 	.buttons(buttons),
 	.status(status),
 	.forced_scandoubler(forced_scandoubler),
+	.gamma_bus(gamma_bus),
 
 	.RTC(RTC),
 
@@ -299,6 +300,7 @@ tsconf tsconf
 	.SDRAM_nRAS(SDRAM_nRAS),
 	.SDRAM_CKE(SDRAM_CKE),
 	.SDRAM_nCS(SDRAM_nCS),
+	.SDRAM_CLK(SDRAM_CLK),
 
 	.VGA_R(R),
 	.VGA_G(G),
@@ -393,10 +395,9 @@ end
 wire [1:0] scale = status[2:1];
 assign VGA_SL = {scale == 3, scale == 2};
 
-video_mixer video_mixer
+video_mixer #(.GAMMA(1)) video_mixer
 (
 	.*,
-	.clk_sys(clk_vid),
 	.ce_pix_out(CE_PIXEL),
 
 	.scanlines(0),

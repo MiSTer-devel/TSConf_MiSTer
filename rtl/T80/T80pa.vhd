@@ -56,7 +56,6 @@
 library IEEE;
 use IEEE.std_logic_1164.all;
 use IEEE.numeric_std.all;
-use work.T80_Pack.all;
 
 entity T80pa is
 	generic(
@@ -108,7 +107,7 @@ begin
 
 	BUSAK_n <= BUSAK;
 
-	u0 : T80
+	u0 : work.T80
 		generic map(
 			Mode    => Mode,
 			IOWait  => 1
