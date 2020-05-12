@@ -43,70 +43,77 @@ always @(posedge clk) begin
 	reg        rd;
 	reg  [8:0] col;
 	reg  [1:0] dqm;
+	reg [15:0] data;
+	reg [23:0] Ar;
+	reg        rq;
 
-	SDRAM_DQ <= 16'hZZZZ;
+	sdr_cmd <= SdrCmd_xx;
+	data <= SDRAM_DQ;
+	SDRAM_DQ <= 16'bZ;
+	state <= state + 1'd1;
 
 	case (state)
 
 	// Init
-	'h00:	begin
+	0:	begin
 			sdr_cmd <= SdrCmd_pr;		// PRECHARGE
 			SDRAM_A <= 0;
 			SDRAM_BA <= 0;
-			state <= state + 1'd1;
 		end
 
 	// REFRESH
-	'h03, 'h0A: begin
+	3,10: begin
 			sdr_cmd <= SdrCmd_re;
-			state <= state + 1'd1;
 		end
 
 	// LOAD MODE REGISTER
-	'h11: begin
+	17: begin
 			sdr_cmd <= SdrCmd_ms;
 			SDRAM_A <= {3'b000, 1'b1, 2'b00, 3'b010, 1'b0, 3'b000};
-			state <= state + 1'd1;
 		end
 
-	// Idle		
-	'h18: begin
-			rd <= 0;
+	// Idle
+	24: begin
 			if (rd) begin
-				DO <= SDRAM_DQ;
-				if (curr_cpu) DO_cpu <= SDRAM_DQ;
+				DO <= data;
+				if (curr_cpu) DO_cpu <= data;
 			end
+
+			state <= state;
+			Ar <= A;
+			dqm <= RNW ? 2'b00 : ~bsel;
+			rd <= 0;
+
 			if(cyc) begin
-				if (REQ) begin
-					sdr_cmd <= SdrCmd_ac;	// ACTIVE
-					{SDRAM_A,SDRAM_BA,col} <= A;
-					dqm <= RNW ? 2'b00 : ~bsel;
-					rd <= RNW;
-					state <= state + 1'd1;
-				end else begin
-					sdr_cmd <= SdrCmd_re;	// REFRESH
-					state <= 'h13;
-				end
+				rq <= REQ;
+				rd <= REQ & RNW;
+				state <= state + 1'd1;
+			end
+		end
+
+	// Start
+	25: begin
+			if (rq) begin
+				{SDRAM_A,SDRAM_BA,col} <= Ar;
+				sdr_cmd <= SdrCmd_ac;
+			end else begin
+				sdr_cmd <= SdrCmd_re;
+				state <= 19;
 			end
 		end
 
 	// Single read/write - with auto precharge
-	'h1A: begin
-			SDRAM_A <= {dqm, 2'b10, col};	// A10 = 1 enable auto precharge; A9..0 = column
-			state <= 'h16;
-			if (rd) sdr_cmd <= SdrCmd_rd;	// READ
+	27: begin
+			SDRAM_A <= {dqm, 2'b10, col};
+			state <= 21;
+			if (rd) sdr_cmd <= SdrCmd_rd;
 			else begin
-				sdr_cmd <= SdrCmd_wr;		// WRITE
+				sdr_cmd <= SdrCmd_wr;
 				SDRAM_DQ <= DI;
+				state <= 22;
 			end
 		end
 
-	// NOP
-	default:
-		begin
-			sdr_cmd <= SdrCmd_xx;
-			state <= state + 1'd1;
-		end
 	endcase
 end
 

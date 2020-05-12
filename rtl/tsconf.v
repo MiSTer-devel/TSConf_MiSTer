@@ -747,7 +747,7 @@ wire       wait_start_gluclock;
 wire [7:0] mc146818a_do_bus;
 
 reg ena_0_4375mhz;
-always @(negedge clk_28mhz) begin
+always @(posedge clk_28mhz) begin
 	reg [5:0] div;
 	div <= div + 1'd1;
 	ena_0_4375mhz <= !div; //28MHz/64

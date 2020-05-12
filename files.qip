@@ -32,4 +32,5 @@ set_global_assignment -name VERILOG_FILE rtl/kempston_mouse.v
 set_global_assignment -name VERILOG_FILE rtl/spi.v
 set_global_assignment -name VERILOG_FILE rtl/clock.v
 set_global_assignment -name VERILOG_FILE rtl/tsconf.v
+set_global_assignment -name SDC_FILE TSConf.sdc
 set_global_assignment -name SYSTEMVERILOG_FILE TSConf.sv
