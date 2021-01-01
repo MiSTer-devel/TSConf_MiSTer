@@ -1,5 +1,6 @@
-# TSConf for MiSTer
-This is the port of TSConf (one of ZX Spectrum clone with extra functionalities) to MiSTer.
+# [TSConf](http://forum.tslabs.info/viewforum.php?f=20&sid=137db6b31f9fb533b908742c2b18284e) for MiSTer Platform
+
+This is the port of TSConf (an improvement to the [ZX-Evolution](https://www.facebook.com/zxatmevolution/) ZX spectrum clone) to MiSTer.
 
 ## Features of the port
 * Scandoubler with HQ2x and Scanlines.
