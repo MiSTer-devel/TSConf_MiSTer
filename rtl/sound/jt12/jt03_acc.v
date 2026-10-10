@@ -20,18 +20,20 @@
 
 */
 
-`timescale 1ns / 1ps
 
-/* Use for YM2203
-    no left/right channels
-    full operator resolution
-    clamped to maximum output of signed 16 bits */
+// Use for YM2203
+// no left/right channels
+// full operator resolution
+// clamped to maximum output of signed 16 bits
+// This version does not clamp each channel individually
+// That does not correspond to real hardware behaviour. I should
+// change it.
 
 module jt03_acc
 (
     input               rst,
     input               clk,
-    input               clk_en,
+    input               clk_en /* synthesis direct_enable */,
     input signed [13:0] op_result,
     input               s1_enters,
     input               s2_enters,
@@ -54,6 +56,11 @@ always @(*) begin
     endcase
 end
 
+// real YM2608 drops the op_result LSB, resulting in a 13-bit accumulator
+// but in YM2203, a 13-bit acc for 3 channels only requires 15 bits
+// and YM3014 has a 16-bit dynamic range.
+// I am leaving the LSB and scaling the output voltage accordingly. This
+// should result in less quantification noise.
 jt12_single_acc #(.win(14),.wout(16)) u_mono(
     .clk        ( clk            ),
     .clk_en     ( clk_en         ),

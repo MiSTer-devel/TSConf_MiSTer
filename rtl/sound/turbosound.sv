@@ -31,8 +31,29 @@ module turbosound
 	input   [7:0] DI,	       // Data In
 	output  [7:0] DO,	       // Data Out
 
-	output [11:0] CHANNEL_L, // Output channel L
-	output [11:0] CHANNEL_R  // Output channel R
+	output  [7:0] PSG_CH_A_0,
+	output  [7:0] PSG_CH_B_0,
+	output  [7:0] PSG_CH_C_0,
+	output signed [15:0] OPN_0,
+	output  [7:0] PSG_CH_A_1,
+	output  [7:0] PSG_CH_B_1,
+	output  [7:0] PSG_CH_C_1,
+	output signed [15:0] OPN_1,
+
+    input   [7:0]   IOA_0_in,
+    input   [7:0]   IOB_0_in,
+    output  [7:0]   IOA_0_out,
+    output  [7:0]   IOB_0_out,
+    output          IOA_0_oe,
+    output          IOB_0_oe,
+
+    input   [7:0]   IOA_1_in,
+    input   [7:0]   IOB_1_in,
+    output  [7:0]   IOA_1_out,
+    output  [7:0]   IOB_1_out,
+    output          IOA_1_oe,
+    output          IOB_1_oe
+
 );
 
 
@@ -100,10 +121,7 @@ always_ff @(posedge CLK or posedge RESET_s) begin
 	end
 end
 
-wire  [7:0] psg_ch_a_0;
-wire  [7:0] psg_ch_b_0;
-wire  [7:0] psg_ch_c_0;
-wire [15:0] opn_0;
+wire signed [15:0] opn_0;
 wire  [7:0] DO_0;
 
 jt03 ym2203_0
@@ -117,17 +135,21 @@ jt03 ym2203_0
 	.wr_n(~ym_wr),
 	.dout(DO_0),
 
-	.psg_A(psg_ch_a_0),
-	.psg_B(psg_ch_b_0),
-	.psg_C(psg_ch_c_0),
+	.psg_A(PSG_CH_A_0),
+	.psg_B(PSG_CH_B_0),
+	.psg_C(PSG_CH_C_0),
 
-	.fm_snd(opn_0)
+	.fm_snd(opn_0),
+
+	.IOA_in(IOA_0_in),
+	.IOB_in(IOB_0_in),
+	.IOA_out(IOA_0_out),
+	.IOB_out(IOB_0_out),
+	.IOA_oe(IOA_0_oe),
+	.IOB_oe(IOB_0_oe)
 );
 
-wire  [7:0] psg_ch_a_1;
-wire  [7:0] psg_ch_b_1;
-wire  [7:0] psg_ch_c_1;
-wire [15:0] opn_1;
+wire signed [15:0] opn_1;
 wire  [7:0] DO_1;
 
 jt03 ym2203_1
@@ -141,39 +163,22 @@ jt03 ym2203_1
 	.wr_n(~ym_wr),
 	.dout(DO_1),
 
-	.psg_A(psg_ch_a_1),
-	.psg_B(psg_ch_b_1),
-	.psg_C(psg_ch_c_1),
+	.psg_A(PSG_CH_A_1),
+	.psg_B(PSG_CH_B_1),
+	.psg_C(PSG_CH_C_1),
 
-	.fm_snd(opn_1)
+	.fm_snd(opn_1),
+
+	.IOA_in(IOA_1_in),
+	.IOB_in(IOB_1_in),
+	.IOA_out(IOA_1_out),
+	.IOB_out(IOB_1_out),
+	.IOA_oe(IOA_1_oe),
+	.IOB_oe(IOB_1_oe)
 );
 
 assign DO = ay_select ? DO_1 : DO_0;
-
-reg  [8:0] sum_ch_a,sum_ch_b,sum_ch_c;
-reg  [7:0] psg_a,psg_b,psg_c;
-reg [11:0] psg_l,psg_r,opn_s;
-reg [11:0] ch_l, ch_r;
-
-always @(posedge CLK) begin
-
-	sum_ch_a <= { 1'b0, psg_ch_a_1 } + { 1'b0, psg_ch_a_0 };
-	sum_ch_b <= { 1'b0, psg_ch_b_1 } + { 1'b0, psg_ch_b_0 };
-	sum_ch_c <= { 1'b0, psg_ch_c_1 } + { 1'b0, psg_ch_c_0 };
-
-	psg_a <= sum_ch_a[8] ? 8'hFF : sum_ch_a[7:0];
-	psg_b <= sum_ch_b[8] ? 8'hFF : sum_ch_b[7:0];
-	psg_c <= sum_ch_c[8] ? 8'hFF : sum_ch_c[7:0];
-
-	psg_l <= {3'b000, psg_a, 1'd0} + {4'b0000, psg_b};
-	psg_r <= {3'b000, psg_c, 1'd0} + {4'b0000, psg_b};
-	opn_s <= {{2{opn_0[15]}}, opn_0[15:6]} + {{2{opn_1[15]}}, opn_1[15:6]};
-
-	ch_l <= fm_ena ? $signed(opn_s) + $signed(psg_l) : $signed(psg_l);
-	ch_r <= fm_ena ? $signed(opn_s) + $signed(psg_r) : $signed(psg_r);
-end
-
-assign CHANNEL_L = ch_l;
-assign CHANNEL_R = ch_r;
+assign OPN_0 = fm_ena ? opn_0 : 16'sd0;
+assign OPN_1 = fm_ena ? opn_1 : 16'sd0;
 
 endmodule
